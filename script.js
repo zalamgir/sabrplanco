@@ -16,6 +16,39 @@ navigation.addEventListener("click", (event) => {
   }
 });
 
+const portfolioTabs = [...document.querySelectorAll(".portfolio-tab")];
+const portfolioPanels = [...document.querySelectorAll(".portfolio-panel")];
+
+function selectPortfolioTab(tab) {
+  portfolioTabs.forEach((portfolioTab) => {
+    const isSelected = portfolioTab === tab;
+    portfolioTab.classList.toggle("is-active", isSelected);
+    portfolioTab.setAttribute("aria-selected", String(isSelected));
+    portfolioTab.tabIndex = isSelected ? 0 : -1;
+  });
+
+  const selectedPanelId = tab.getAttribute("aria-controls");
+  portfolioPanels.forEach((panel) => {
+    panel.hidden = panel.id !== selectedPanelId;
+  });
+}
+
+portfolioTabs.forEach((tab, index) => {
+  tab.addEventListener("click", () => selectPortfolioTab(tab));
+  tab.addEventListener("keydown", (event) => {
+    let nextIndex;
+    if (event.key === "ArrowRight") nextIndex = (index + 1) % portfolioTabs.length;
+    if (event.key === "ArrowLeft") nextIndex = (index - 1 + portfolioTabs.length) % portfolioTabs.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = portfolioTabs.length - 1;
+    if (nextIndex === undefined) return;
+
+    event.preventDefault();
+    portfolioTabs[nextIndex].focus();
+    selectPortfolioTab(portfolioTabs[nextIndex]);
+  });
+});
+
 document.querySelector(".inquiry-form").addEventListener("submit", (event) => {
   event.preventDefault();
   document.querySelector(".form-note").textContent =
