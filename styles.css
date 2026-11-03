@@ -358,22 +358,8 @@ h2 em,
   border-left: 1px solid var(--line);
 }
 
-.service-number {
-  color: var(--muted);
-  font-size: 0.65rem;
-  letter-spacing: 0.12em;
-}
-
-.service-icon {
-  position: absolute;
-  top: 1.7rem;
-  right: 2rem;
-  color: var(--rust);
-  font-size: 1.4rem;
-}
-
 .service-card h3 {
-  margin: 2.3rem 0 0.8rem;
+  margin: 1rem 0 0.8rem;
   font: 400 1.65rem var(--serif);
 }
 
@@ -458,38 +444,54 @@ h2 em,
   letter-spacing: 0.045em;
 }
 
-.contact-details {
-  width: 100%;
-  max-width: 370px;
-  margin-top: 2.2rem;
-  border-top: 1px solid var(--line);
+.contact-section {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  align-items: center;
+  gap: 8%;
+  padding: 4.5rem 12%;
+  background: var(--espresso);
+  color: var(--ivory);
 }
 
-.contact-label {
-  margin: 1rem 0 0.55rem;
-  color: var(--rust);
-  font-size: 0.58rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
+.contact-section .eyebrow {
+  color: var(--champagne);
+}
+
+.contact-section h2 {
+  margin: 1.2rem 0 0;
+  font: 400 clamp(2.2rem, 3.8vw, 3.5rem) / 1.1 var(--serif);
+  letter-spacing: -0.05em;
+}
+
+.contact-section h2 em {
+  color: var(--champagne);
+  font-weight: 400;
+}
+
+.contact-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
 }
 
 .contact-link {
-  display: flex;
-  align-items: baseline;
-  gap: 0.65rem;
-  padding: 0.65rem 0;
-  color: var(--espresso);
-  font-size: 0.7rem;
-}
-
-.contact-link + .contact-link {
-  border-top: 1px solid var(--line);
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 1.15rem 0;
+  border-top: 1px solid rgba(246, 241, 232, 0.35);
+  color: var(--ivory);
+  font-size: 0.72rem;
 }
 
 .contact-link > span:first-child {
-  width: 68px;
-  flex-shrink: 0;
-  color: var(--muted);
+  grid-column: 1 / -1;
+  color: var(--champagne);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
 }
 
 .contact-link strong {
@@ -498,12 +500,11 @@ h2 em,
 }
 
 .contact-arrow {
-  margin-left: auto;
-  color: var(--rust);
+  color: var(--champagne);
 }
 
 .contact-link:hover strong {
-  color: var(--rust);
+  color: var(--champagne);
 }
 
 .inquiry-form {
@@ -656,6 +657,11 @@ h2 em,
 
   .inquiry {
     gap: 5%;
+  }
+
+  .contact-section {
+    padding-right: 8%;
+    padding-left: 8%;
   }
 }
 
@@ -840,11 +846,6 @@ h2 em,
     min-height: 0;
   }
 
-  .service-icon {
-    top: 1.25rem;
-    right: 0;
-  }
-
   .about {
     grid-template-columns: 1fr;
   }
@@ -862,6 +863,21 @@ h2 em,
     gap: 2.7rem;
     padding-top: 4.7rem;
     padding-bottom: 4.7rem;
+  }
+
+  .contact-section {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 3.7rem 7%;
+  }
+
+  .contact-section h2 {
+    font-size: 2.8rem;
+  }
+
+  .contact-details {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
   }
 
   .form-row {
