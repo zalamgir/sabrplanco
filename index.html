@@ -208,7 +208,11 @@
           <p>Tell us a little about the day you're imagining. We'd love to hear.</p>
           <p class="service-area">Based in NJ &amp; NY · Available for destination weddings</p>
         </div>
-        <form class="inquiry-form">
+        <form class="inquiry-form" action="https://api.web3forms.com/submit" method="POST">
+          <input type="hidden" name="access_key" value="9e508762-d436-49a7-bb2d-9ef6050b3b46" />
+          <input type="hidden" name="subject" value="New wedding inquiry from Sabr Plan Co." />
+          <input type="hidden" name="from_name" value="Sabr Plan Co. website" />
+          <input class="form-honeypot" type="checkbox" name="botcheck" tabindex="-1" aria-hidden="true" />
           <div class="form-row">
             <label>
               Your name
@@ -233,9 +237,7 @@
             <textarea name="message" rows="3" placeholder="Date, location, or anything you'd like us to know"></textarea>
           </label>
           <button class="button button-dark" type="submit">Send your inquiry <span aria-hidden="true">↗</span></button>
-          <p class="form-note" role="status" aria-live="polite">
-            The inquiry form is a starter and isn't connected yet. Add your preferred contact email or form service before publishing.
-          </p>
+          <p class="form-note" role="status" aria-live="polite"></p>
         </form>
       </section>
 
