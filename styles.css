@@ -226,22 +226,6 @@ h2 em,
   color: var(--espresso);
 }
 
-.hero-note {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  margin-top: 3rem;
-  color: var(--muted);
-  font-size: 0.66rem;
-  line-height: 1.7;
-  letter-spacing: 0.025em;
-}
-
-.note-mark {
-  color: var(--rust);
-  font-size: 1.65rem;
-}
-
 .hero-image {
   height: min(500px, 71vh);
   min-height: 390px;
@@ -864,10 +848,6 @@ h2 em,
   .hero-description {
     max-width: 350px;
     font-size: 0.85rem;
-  }
-
-  .hero-note {
-    margin-top: 1.8rem;
   }
 
   .hero-image {
