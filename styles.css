@@ -384,6 +384,106 @@ h2 em,
   color: var(--rust);
 }
 
+.portfolio {
+  padding-top: 5.5rem;
+  padding-bottom: 6rem;
+}
+
+.portfolio .section-heading {
+  margin-bottom: 1.5rem;
+}
+
+.portfolio-note {
+  margin: 0 0 1.2rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.6;
+}
+
+.portfolio-tabs {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding: 0.2rem 0 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.portfolio-tab {
+  flex: 0 0 auto;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  padding: 0 1rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.portfolio-tab:hover,
+.portfolio-tab.is-active {
+  border-color: var(--espresso);
+  background: var(--espresso);
+  color: var(--ivory);
+}
+
+.portfolio-panel {
+  padding-top: 1.5rem;
+}
+
+.portfolio-gallery {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 0.75fr;
+  gap: 0.9rem;
+  align-items: stretch;
+}
+
+.portfolio-photo {
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--paper-deep);
+  color: var(--muted);
+  text-align: center;
+  font: italic 1rem var(--serif);
+}
+
+.portfolio-photo-tall {
+  min-height: 365px;
+  background: #e5d7c7;
+}
+
+.portfolio-photo-wide {
+  background: #ded0c0;
+}
+
+.portfolio-photo-detail {
+  background: #ece4d9;
+}
+
+.portfolio-review {
+  max-width: 700px;
+  margin: 2rem auto 0;
+  text-align: center;
+}
+
+.portfolio-review .eyebrow {
+  justify-content: center;
+}
+
+.portfolio-review blockquote {
+  margin: 0.8rem 0 0.65rem;
+  color: var(--espresso);
+  font: italic 1.45rem / 1.5 var(--serif);
+}
+
+.portfolio-attribution {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
 .about {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -819,6 +919,11 @@ h2 em,
     font-size: 3rem;
   }
 
+  .portfolio {
+    padding-top: 4.2rem;
+    padding-bottom: 4.5rem;
+  }
+
   .section-aside {
     margin-top: 1.3rem;
   }
@@ -856,6 +961,33 @@ h2 em,
 
   .about-copy {
     padding: 4rem 7%;
+  }
+
+  .portfolio-gallery {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+  }
+
+  .portfolio-photo {
+    min-height: 190px;
+    font-size: 0.9rem;
+  }
+
+  .portfolio-photo-tall {
+    min-height: 260px;
+    grid-row: span 2;
+  }
+
+  .portfolio-photo-detail {
+    min-height: 190px;
+  }
+
+  .portfolio-review {
+    margin-top: 1.5rem;
+  }
+
+  .portfolio-review blockquote {
+    font-size: 1.25rem;
   }
 
   .inquiry {
