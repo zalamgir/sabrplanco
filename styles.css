@@ -111,8 +111,8 @@ textarea {
 .navigation {
   display: flex;
   align-items: center;
-  gap: clamp(1.5rem, 3.2vw, 3.5rem);
-  font-size: 0.75rem;
+  gap: clamp(0.7rem, 1.5vw, 1.3rem);
+  font-size: 0.72rem;
 }
 
 .navigation a:not(.nav-cta),
@@ -123,6 +123,15 @@ textarea {
 .navigation a:hover,
 .back-to-top:hover {
   color: var(--rust);
+}
+
+.navigation a[aria-current="page"]:not(.nav-cta) {
+  color: var(--rust);
+}
+
+.navigation .nav-cta[aria-current="page"] {
+  background: var(--espresso);
+  color: var(--ivory);
 }
 
 .nav-cta {
@@ -277,6 +286,33 @@ h2 em,
   padding-left: 12%;
 }
 
+.page-heading {
+  padding-top: 5.5rem;
+  padding-bottom: 4.5rem;
+}
+
+.page-heading h1 {
+  margin: 1.25rem 0 0;
+  font: 400 clamp(3rem, 6vw, 5rem) / 1.08 var(--serif);
+  letter-spacing: -0.05em;
+}
+
+.page-heading h1 em,
+.home-page-card h3 em,
+.home-cta h2 em,
+.service-next h2 em {
+  color: var(--rust);
+  font-weight: 400;
+}
+
+.page-description {
+  max-width: 580px;
+  margin: 1.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.8;
+}
+
 .intro {
   padding-top: 6.3rem;
   padding-bottom: 6.8rem;
@@ -343,6 +379,11 @@ h2 em,
 }
 
 .service-card h3 {
+  margin: 1rem 0 0.8rem;
+  font: 400 1.65rem var(--serif);
+}
+
+.service-card h2 {
   margin: 1rem 0 0.8rem;
   font: 400 1.65rem var(--serif);
 }
@@ -681,6 +722,113 @@ h2 em,
   color: var(--ivory);
 }
 
+.home-pages {
+  padding-top: 5.5rem;
+  padding-bottom: 6rem;
+  background: var(--paper-deep);
+}
+
+.home-page-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.home-page-card {
+  min-height: 245px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.5rem 1.6rem 1.8rem 0;
+}
+
+.home-page-card + .home-page-card {
+  padding-left: 1.6rem;
+  border-left: 1px solid var(--line);
+}
+
+.home-page-card .eyebrow {
+  font-size: 0.55rem;
+}
+
+.home-page-card h3 {
+  margin: 1.5rem 0;
+  font: 400 clamp(1.6rem, 2.4vw, 2.3rem) / 1.2 var(--serif);
+}
+
+.home-cta,
+.service-next {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+.home-cta h2,
+.service-next h2 {
+  margin: 1.2rem 0 1.5rem;
+  font: 400 clamp(2.6rem, 4.5vw, 4rem) / 1.08 var(--serif);
+  letter-spacing: -0.05em;
+}
+
+.service-next {
+  background: var(--paper-deep);
+}
+
+.faq-list {
+  padding-top: 0;
+  padding-bottom: 3rem;
+}
+
+.faq-item {
+  border-top: 1px solid var(--line);
+}
+
+.faq-item:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.faq-item summary {
+  position: relative;
+  padding: 1.35rem 2.5rem 1.35rem 0;
+  color: var(--espresso);
+  cursor: pointer;
+  font: 400 1.25rem / 1.4 var(--serif);
+  list-style: none;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary::after {
+  content: "+";
+  position: absolute;
+  top: 1.2rem;
+  right: 0;
+  color: var(--rust);
+  font: 400 1.5rem var(--sans);
+}
+
+.faq-item[open] summary::after {
+  content: "−";
+}
+
+.faq-item p {
+  max-width: 680px;
+  margin: 0;
+  padding: 0 2.5rem 1.35rem 0;
+  color: var(--muted);
+  font-size: 0.83rem;
+  line-height: 1.8;
+}
+
+.faq-item p a {
+  color: var(--rust);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .footer-wordmark {
   width: 220px;
   min-height: 135px;
@@ -747,6 +895,11 @@ h2 em,
   .section-wrap {
     padding-right: 8%;
     padding-left: 8%;
+  }
+
+  .navigation {
+    gap: 0.8rem;
+    font-size: 0.67rem;
   }
 
   .about-copy {
@@ -828,6 +981,10 @@ h2 em,
     background: var(--paper);
   }
 
+  .navigation {
+    font-size: 0.75rem;
+  }
+
   .navigation.is-open {
     display: flex;
   }
@@ -888,6 +1045,15 @@ h2 em,
     padding-left: 7%;
   }
 
+  .page-heading {
+    padding-top: 4rem;
+    padding-bottom: 3rem;
+  }
+
+  .page-heading h1 {
+    font-size: clamp(3rem, 13vw, 4.5rem);
+  }
+
   .intro {
     padding-top: 4.4rem;
     padding-bottom: 4.8rem;
@@ -924,6 +1090,42 @@ h2 em,
 
   .service-grid {
     grid-template-columns: 1fr;
+  }
+
+  .home-page-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-page-card {
+    min-height: 200px;
+    padding: 1.35rem 0;
+  }
+
+  .home-page-card + .home-page-card {
+    padding: 1.35rem 0;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .home-page-card h3 {
+    margin: 1.2rem 0;
+    font-size: 2rem;
+  }
+
+  .home-pages {
+    padding-top: 4.2rem;
+    padding-bottom: 4.5rem;
+  }
+
+  .home-cta,
+  .service-next {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .faq-list {
+    padding-top: 0;
+    padding-bottom: 2rem;
   }
 
   .service-card {

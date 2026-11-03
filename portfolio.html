@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Explore wedding celebrations and couple stories from Sabr Plan Co." />
+    <meta name="theme-color" content="#f6f1e8" />
+    <title>Portfolio | Sabr Plan Co.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <a class="wordmark" href="index.html" aria-label="Sabr Plan Co. home">
+        <img class="brand-script" src="assets/sabr-script.png" alt="" aria-hidden="true" />
+        <span class="brand-subtitle"><span></span>PLAN CO.<span></span></span>
+        <span class="brand-caption">WEDDING PLANNING &amp; COORDINATION</span>
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" aria-label="Open navigation">
+        <span></span><span></span>
+      </button>
+      <nav class="navigation" id="primary-navigation" aria-label="Main navigation">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="services.html">Services</a>
+        <a href="portfolio.html" aria-current="page">Portfolio</a>
+        <a href="faqs.html">FAQs</a>
+        <a class="nav-cta" href="inquiry.html">Inquiry <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+    <main id="main">
+      <section class="page-heading section-wrap" aria-labelledby="page-title">
+        <p class="eyebrow"><span class="eyebrow-line"></span> A LOOK BACK</p>
+        <h1 id="page-title">A few love<br /><em>stories.</em></h1>
+        <p class="page-description">
+          Every celebration has its own feeling. Choose a couple to see their photos
+          and the kind words they shared.
+        </p>
+      </section>
+      <section class="portfolio section-wrap" aria-label="Couple stories">
+        <p class="portfolio-note">Sample layout — replace names, photos, and reviews with approved client content.</p>
+        <div class="portfolio-tabs" role="tablist" aria-label="Couple stories">
+          <button class="portfolio-tab is-active" id="portfolio-tab-tom-lisa" type="button" role="tab" aria-selected="true" aria-controls="portfolio-panel-tom-lisa" tabindex="0">Tom + Lisa</button>
+          <button class="portfolio-tab" id="portfolio-tab-john-mary" type="button" role="tab" aria-selected="false" aria-controls="portfolio-panel-john-mary" tabindex="-1">John + Mary</button>
+          <button class="portfolio-tab" id="portfolio-tab-couple-three" type="button" role="tab" aria-selected="false" aria-controls="portfolio-panel-couple-three" tabindex="-1">Couple Three</button>
+        </div>
+        <div class="portfolio-panel" id="portfolio-panel-tom-lisa" role="tabpanel" aria-labelledby="portfolio-tab-tom-lisa" tabindex="0">
+          <div class="portfolio-gallery" aria-label="Tom and Lisa wedding photo placeholders">
+            <div class="portfolio-photo portfolio-photo-tall"><span>Tom + Lisa wedding photo</span></div>
+            <div class="portfolio-photo portfolio-photo-wide"><span>Tom + Lisa wedding photo</span></div>
+            <div class="portfolio-photo portfolio-photo-detail"><span>Tom + Lisa wedding photo</span></div>
+          </div>
+          <figure class="portfolio-review">
+            <p class="eyebrow"><span class="eyebrow-line"></span> KIND WORDS</p>
+            <blockquote>“Add Tom + Lisa's approved review here.”</blockquote>
+            <figcaption class="portfolio-attribution">Tom + Lisa</figcaption>
+          </figure>
+        </div>
+        <div class="portfolio-panel" id="portfolio-panel-john-mary" role="tabpanel" aria-labelledby="portfolio-tab-john-mary" tabindex="0" hidden>
+          <div class="portfolio-gallery" aria-label="John and Mary wedding photo placeholders">
+            <div class="portfolio-photo portfolio-photo-tall"><span>John + Mary wedding photo</span></div>
+            <div class="portfolio-photo portfolio-photo-wide"><span>John + Mary wedding photo</span></div>
+            <div class="portfolio-photo portfolio-photo-detail"><span>John + Mary wedding photo</span></div>
+          </div>
+          <figure class="portfolio-review">
+            <p class="eyebrow"><span class="eyebrow-line"></span> KIND WORDS</p>
+            <blockquote>“Add John + Mary's approved review here.”</blockquote>
+            <figcaption class="portfolio-attribution">John + Mary</figcaption>
+          </figure>
+        </div>
+        <div class="portfolio-panel" id="portfolio-panel-couple-three" role="tabpanel" aria-labelledby="portfolio-tab-couple-three" tabindex="0" hidden>
+          <div class="portfolio-gallery" aria-label="Couple three wedding photo placeholders">
+            <div class="portfolio-photo portfolio-photo-tall"><span>Couple Three wedding photo</span></div>
+            <div class="portfolio-photo portfolio-photo-wide"><span>Couple Three wedding photo</span></div>
+            <div class="portfolio-photo portfolio-photo-detail"><span>Couple Three wedding photo</span></div>
+          </div>
+          <figure class="portfolio-review">
+            <p class="eyebrow"><span class="eyebrow-line"></span> KIND WORDS</p>
+            <blockquote>“Add Couple Three's approved review here.”</blockquote>
+            <figcaption class="portfolio-attribution">Couple Three</figcaption>
+          </figure>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <a class="wordmark footer-wordmark" href="index.html" aria-label="Sabr Plan Co. home">
+        <img class="brand-script" src="assets/sabr-script.png" alt="" aria-hidden="true" />
+        <span class="brand-subtitle"><span></span>PLAN CO.<span></span></span>
+        <span class="brand-caption">WEDDING PLANNING &amp; COORDINATION</span>
+      </a>
+      <p>Made with care, for days worth remembering.</p>
+      <a class="back-to-top" href="#main">Back to top ↑</a>
+    </footer>
+  </body>
+</html>
