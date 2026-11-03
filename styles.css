@@ -1,11 +1,14 @@
 :root {
   color-scheme: light;
-  --paper: #f8f6f0;
-  --paper-deep: #efede4;
-  --ink: #263a31;
-  --muted: #777b70;
-  --rust: #b96548;
-  --line: #deddd3;
+  --paper: #f6f1e8;
+  --paper-deep: #e9dfd1;
+  --ink: #3b261b;
+  --muted: #77685b;
+  --rust: #966a4d;
+  --line: #d7cabb;
+  --espresso: #3b261b;
+  --ivory: #f6f1e8;
+  --champagne: #d5bea5;
   --serif: "Playfair Display", Georgia, serif;
   --sans: "DM Sans", Arial, sans-serif;
 }
@@ -46,8 +49,8 @@ textarea {
   left: 0.75rem;
   transform: translateY(-160%);
   padding: 0.7rem 1rem;
-  background: var(--ink);
-  color: white;
+  background: var(--espresso);
+  color: var(--ivory);
 }
 
 .skip-link:focus {
@@ -55,34 +58,54 @@ textarea {
 }
 
 .site-header {
-  height: 92px;
+  min-height: 124px;
   padding: 0 7.1%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(38, 58, 49, 0.11);
+  border-bottom: 1px solid rgba(59, 38, 27, 0.16);
 }
 
 .wordmark {
-  display: inline-flex;
+  width: 244px;
+  min-height: 145px;
+  display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  color: var(--espresso);
 }
 
-.wordmark-name {
-  font-family: var(--serif);
-  font-size: 1.65rem;
-  letter-spacing: -0.07em;
-  line-height: 1;
+.brand-script {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
-.wordmark-name span {
-  color: var(--rust);
+.brand-subtitle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding-left: 0.42em;
+  color: var(--espresso);
+  font: 500 0.82rem / 1 var(--serif);
+  letter-spacing: 0.42em;
 }
 
-.wordmark-caption {
-  font-size: 0.51rem;
-  letter-spacing: 0.16em;
+.brand-subtitle span {
+  width: 27px;
+  height: 1px;
+  background: var(--rust);
+}
+
+.brand-caption {
+  margin-top: 0.55rem;
+  color: var(--muted);
+  font-size: 0.46rem;
+  letter-spacing: 0.34em;
+  white-space: nowrap;
 }
 
 .navigation {
@@ -104,7 +127,7 @@ textarea {
 
 .nav-cta {
   padding: 0.8rem 1.12rem;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--espresso);
 }
 
 .nav-cta span,
@@ -118,7 +141,7 @@ textarea {
 }
 
 .hero {
-  min-height: min(660px, calc(100svh - 92px));
+  min-height: min(660px, calc(100svh - 124px));
   position: relative;
   display: grid;
   grid-template-columns: 1.08fr 0.92fr;
@@ -175,7 +198,7 @@ h2 em,
 .hero-description {
   max-width: 380px;
   margin-bottom: 1.8rem;
-  color: #656b61;
+  color: var(--muted);
   font-size: 0.91rem;
   line-height: 1.8;
 }
@@ -193,14 +216,14 @@ h2 em,
 }
 
 .button-dark {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--espresso);
+  color: var(--ivory);
 }
 
 .button-dark:hover {
-  border-color: var(--ink);
+  border-color: var(--espresso);
   background: transparent;
-  color: var(--ink);
+  color: var(--espresso);
 }
 
 .hero-note {
@@ -225,9 +248,9 @@ h2 em,
   position: relative;
   margin: 2rem 0 2rem 1rem;
   background:
-    linear-gradient(0deg, rgba(38, 58, 49, 0.09), rgba(38, 58, 49, 0.02)),
+    linear-gradient(0deg, rgba(59, 38, 27, 0.18), rgba(59, 38, 27, 0.02)),
     url("https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1400&q=85") center 48% / cover,
-    #d8d2c4;
+    var(--paper-deep);
 }
 
 .image-stamp {
@@ -240,7 +263,7 @@ h2 em,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--paper);
+  background: var(--ivory);
   color: var(--rust);
   font: 500 0.74rem / 1.4 var(--serif);
   letter-spacing: 0.05em;
@@ -260,7 +283,7 @@ h2 em,
   position: absolute;
   bottom: 1.7rem;
   left: 7.1%;
-  color: #8e9086;
+  color: var(--muted);
   font-size: 0.58rem;
   letter-spacing: 0.12em;
 }
@@ -320,8 +343,8 @@ h2 em,
 .service-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  border-top: 1px solid #d6d3c9;
-  border-bottom: 1px solid #d6d3c9;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 .service-card {
@@ -332,11 +355,11 @@ h2 em,
 
 .service-card + .service-card {
   padding-left: 2.5rem;
-  border-left: 1px solid #d6d3c9;
+  border-left: 1px solid var(--line);
 }
 
 .service-number {
-  color: #8d8e82;
+  color: var(--muted);
   font-size: 0.65rem;
   letter-spacing: 0.12em;
 }
@@ -384,9 +407,9 @@ h2 em,
 .about-image {
   min-height: 430px;
   background:
-    linear-gradient(0deg, rgba(38, 58, 49, 0.08), rgba(38, 58, 49, 0.02)),
+    linear-gradient(0deg, rgba(59, 38, 27, 0.14), rgba(59, 38, 27, 0.02)),
     url("https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1200&q=85") center / cover,
-    #d8d2c4;
+    var(--paper-deep);
 }
 
 .about-copy {
@@ -395,6 +418,7 @@ h2 em,
   align-items: flex-start;
   justify-content: center;
   padding: 5rem 13%;
+  background: var(--paper-deep);
 }
 
 .about-copy > p:not(.eyebrow, .about-signoff) {
@@ -434,6 +458,54 @@ h2 em,
   letter-spacing: 0.045em;
 }
 
+.contact-details {
+  width: 100%;
+  max-width: 370px;
+  margin-top: 2.2rem;
+  border-top: 1px solid var(--line);
+}
+
+.contact-label {
+  margin: 1rem 0 0.55rem;
+  color: var(--rust);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+.contact-link {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  padding: 0.65rem 0;
+  color: var(--espresso);
+  font-size: 0.7rem;
+}
+
+.contact-link + .contact-link {
+  border-top: 1px solid var(--line);
+}
+
+.contact-link > span:first-child {
+  width: 68px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.contact-link strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.contact-arrow {
+  margin-left: auto;
+  color: var(--rust);
+}
+
+.contact-link:hover strong {
+  color: var(--rust);
+}
+
 .inquiry-form {
   display: flex;
   flex-direction: column;
@@ -460,7 +532,7 @@ h2 em,
 .inquiry-form textarea {
   width: 100%;
   border: 0;
-  border-bottom: 1px solid #c9c8bd;
+  border-bottom: 1px solid var(--line);
   border-radius: 0;
   outline: none;
   padding: 0.65rem 0;
@@ -479,7 +551,7 @@ h2 em,
 
 .inquiry-form input::placeholder,
 .inquiry-form textarea::placeholder {
-  color: #98998f;
+  color: #897a6b;
 }
 
 .inquiry-form textarea {
@@ -493,7 +565,7 @@ h2 em,
 .form-note {
   max-width: 470px;
   margin: -0.4rem 0 0;
-  color: #777b70;
+  color: var(--muted);
   font-size: 0.65rem;
   line-height: 1.6;
 }
@@ -505,26 +577,42 @@ h2 em,
   justify-content: space-between;
   gap: 2rem;
   padding: 1.5rem 7.1%;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--espresso);
+  background: var(--espresso);
+  color: var(--ivory);
 }
 
-.footer-wordmark .wordmark-name {
-  font-size: 1.4rem;
+.footer-wordmark {
+  width: 220px;
+  min-height: 135px;
 }
 
-.footer-wordmark .wordmark-caption {
-  font-size: 0.45rem;
+.footer-wordmark,
+.footer-wordmark .brand-subtitle {
+  color: var(--ivory);
+}
+
+.footer-wordmark .brand-subtitle span {
+  background: var(--champagne);
+}
+
+.footer-wordmark .brand-caption {
+  color: var(--champagne);
+}
+
+.footer-wordmark .brand-script {
+  filter: brightness(0) invert(1);
 }
 
 .site-footer > p,
 .back-to-top {
   margin: 0;
-  color: var(--muted);
+  color: var(--champagne);
   font-size: 0.65rem;
 }
 
 .back-to-top {
-  color: var(--ink);
+  color: var(--ivory);
 }
 
 :focus-visible {
@@ -536,6 +624,11 @@ h2 em,
   .site-header {
     padding-right: 5%;
     padding-left: 5%;
+  }
+
+  .wordmark {
+    width: 220px;
+    min-height: 135px;
   }
 
   .hero {
@@ -572,14 +665,30 @@ h2 em,
   }
 
   .site-header {
-    height: 76px;
+    min-height: 92px;
     position: relative;
     z-index: 3;
     background: var(--paper);
   }
 
-  .wordmark-name {
-    font-size: 1.5rem;
+  .wordmark {
+    width: 190px;
+    min-height: 115px;
+  }
+
+  .brand-subtitle {
+    gap: 0.45rem;
+    font-size: 0.7rem;
+  }
+
+  .brand-subtitle span {
+    width: 19px;
+  }
+
+  .brand-caption {
+    margin-top: 0.45rem;
+    font-size: 0.38rem;
+    letter-spacing: 0.25em;
   }
 
   .menu-toggle {
@@ -603,7 +712,7 @@ h2 em,
 
   .navigation {
     position: absolute;
-    top: 75px;
+    top: 114px;
     right: 0;
     left: 0;
     display: none;
@@ -719,7 +828,7 @@ h2 em,
 
   .service-card + .service-card {
     padding: 1.6rem 0 2rem;
-    border-top: 1px solid #d6d3c9;
+    border-top: 1px solid var(--line);
     border-left: 0;
   }
 
@@ -766,6 +875,11 @@ h2 em,
     justify-content: space-between;
     gap: 1.1rem;
     padding: 1.5rem 7%;
+  }
+
+  .footer-wordmark {
+    width: 190px;
+    min-height: 115px;
   }
 
   .site-footer > p {

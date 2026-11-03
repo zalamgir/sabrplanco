@@ -8,5 +8,6 @@ Open `index.html` in a browser. The site uses plain HTML, CSS, and JavaScript, s
 
 ## Before publishing
 
+- The website palette is inspired by the supplied Sabr Plan Co. logo: espresso brown, ivory, and warm champagne. The original is preserved in `assets/sabr-plan-co-logo.png`, and the exact script lettering is isolated for use on the site in `assets/sabr-script.png`.
 - Replace the starter copy and photography with approved business details and images.
 - Connect the inquiry form to a preferred email address or form service. It currently provides front-end validation only and does not send submissions.
