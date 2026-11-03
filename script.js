@@ -49,8 +49,44 @@ portfolioTabs.forEach((tab, index) => {
   });
 });
 
-document.querySelector(".inquiry-form").addEventListener("submit", (event) => {
+const inquiryForm = document.querySelector(".inquiry-form");
+const formStatus = inquiryForm.querySelector(".form-note");
+const submitButton = inquiryForm.querySelector('button[type="submit"]');
+const defaultButtonText = submitButton.innerText;
+
+inquiryForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  document.querySelector(".form-note").textContent =
-    "Thanks for sharing a little about your day. This starter form isn't connected yet—add your preferred contact email or form service before publishing.";
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Sending...";
+  formStatus.textContent = "Sending your inquiry...";
+
+  try {
+    const formData = new FormData(inquiryForm);
+    const response = await fetch(inquiryForm.action, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(Object.fromEntries(formData)),
+    });
+    const result = await response.json();
+
+    if (!response.ok || result.success !== true) {
+      formStatus.textContent =
+        result.message || "We couldn't send your inquiry. Please try again or email sabrplanco@gmail.com.";
+      return;
+    }
+
+    inquiryForm.reset();
+    formStatus.textContent =
+      "Thank you for reaching out! Your inquiry has been sent. We'll be in touch soon.";
+  } catch {
+    formStatus.textContent =
+      "We couldn't send your inquiry. Please check your connection and try again, or email sabrplanco@gmail.com.";
+  } finally {
+    submitButton.disabled = false;
+    submitButton.innerText = defaultButtonText;
+  }
 });

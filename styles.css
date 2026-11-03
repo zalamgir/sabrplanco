@@ -647,6 +647,20 @@ h2 em,
   align-self: flex-start;
 }
 
+.inquiry-form .button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.form-honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 .form-note {
   max-width: 470px;
   margin: -0.4rem 0 0;
