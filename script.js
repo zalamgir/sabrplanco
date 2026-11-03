@@ -63,6 +63,8 @@ inquiryForm.addEventListener("submit", async (event) => {
 
   try {
     const formData = new FormData(inquiryForm);
+    const inquiryName = formData.get("name")?.toString().trim();
+    formData.set("subject", `Sabr Plan Co. - New Inquiry from ${inquiryName}`);
     const response = await fetch(inquiryForm.action, {
       method: "POST",
       headers: {
