@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Get in touch with Sabr Plan Co. about wedding planning and coordination in NJ, NY, and beyond." />
+    <meta name="theme-color" content="#f6f1e8" />
+    <title>Inquiry | Sabr Plan Co.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <a class="wordmark" href="index.html" aria-label="Sabr Plan Co. home">
+        <img class="brand-script" src="assets/sabr-script.png" alt="" aria-hidden="true" />
+        <span class="brand-subtitle"><span></span>PLAN CO.<span></span></span>
+        <span class="brand-caption">WEDDING PLANNING &amp; COORDINATION</span>
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" aria-label="Open navigation">
+        <span></span><span></span>
+      </button>
+      <nav class="navigation" id="primary-navigation" aria-label="Main navigation">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="services.html">Services</a>
+        <a href="portfolio.html">Portfolio</a>
+        <a href="faqs.html">FAQs</a>
+        <a class="nav-cta" href="inquiry.html" aria-current="page">Inquiry <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+    <main id="main">
+      <section class="page-heading section-wrap" aria-labelledby="page-title">
+        <p class="eyebrow"><span class="eyebrow-line"></span> YOUR NEXT CHAPTER STARTS HERE</p>
+        <h1 id="page-title">Let's make room<br />for <em>the good stuff.</em></h1>
+        <p class="page-description">Tell us a little about the day you're imagining. We'd love to hear.</p>
+        <p class="service-area">Based in NJ &amp; NY · Available for destination weddings</p>
+      </section>
+      <section class="inquiry section-wrap" aria-label="Send an inquiry">
+        <div class="inquiry-heading">
+          <p class="eyebrow"><span class="eyebrow-line"></span> START A CONVERSATION</p>
+          <h2>Tell us about<br /><em>your day.</em></h2>
+          <p>Share what you know so far—even if it's just the beginning of an idea.</p>
+        </div>
+        <form class="inquiry-form" action="https://api.web3forms.com/submit" method="POST">
+          <input type="hidden" name="access_key" value="9e508762-d436-49a7-bb2d-9ef6050b3b46" />
+          <input type="hidden" name="subject" value="Sabr Plan Co. - New Inquiry" />
+          <input type="hidden" name="from_name" value="Sabr Plan Co. Inquiry" />
+          <input class="form-honeypot" type="checkbox" name="botcheck" tabindex="-1" aria-hidden="true" />
+          <div class="form-row">
+            <label>
+              Your name
+              <input name="name" type="text" autocomplete="name" placeholder="How should we say hello?" required />
+            </label>
+            <label>
+              Email address
+              <input name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+            </label>
+          </div>
+          <label>
+            What are you looking for?
+            <select name="service" required>
+              <option value="" disabled selected>Choose a service</option>
+              <option>Day-of coordination</option>
+              <option>Wedding planning</option>
+              <option>I'm not sure yet</option>
+            </select>
+          </label>
+          <label>
+            A little about your day
+            <textarea name="message" rows="3" placeholder="Date, location, or anything you'd like us to know"></textarea>
+          </label>
+          <button class="button button-dark" type="submit">Send your inquiry <span aria-hidden="true">↗</span></button>
+          <p class="form-note" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+      <section class="contact-section" aria-labelledby="contact-title">
+        <div class="contact-intro">
+          <p class="eyebrow"><span class="eyebrow-line"></span> GET IN TOUCH</p>
+          <h2 id="contact-title">Prefer to reach out<br /><em>directly?</em></h2>
+        </div>
+        <div class="contact-details" aria-label="Contact details">
+          <a class="contact-link" href="mailto:sabrplanco@gmail.com">
+            <span>Email</span>
+            <strong>sabrplanco@gmail.com</strong>
+            <span class="contact-arrow" aria-hidden="true">↗</span>
+          </a>
+          <a class="contact-link" href="https://www.instagram.com/sabrplanco" target="_blank" rel="noopener noreferrer">
+            <span>Instagram</span>
+            <strong>@sabrplanco</strong>
+            <span class="contact-arrow" aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <a class="wordmark footer-wordmark" href="index.html" aria-label="Sabr Plan Co. home">
+        <img class="brand-script" src="assets/sabr-script.png" alt="" aria-hidden="true" />
+        <span class="brand-subtitle"><span></span>PLAN CO.<span></span></span>
+        <span class="brand-caption">WEDDING PLANNING &amp; COORDINATION</span>
+      </a>
+      <p>Made with care, for days worth remembering.</p>
+      <a class="back-to-top" href="#main">Back to top ↑</a>
+    </footer>
+  </body>
+</html>
