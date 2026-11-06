@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#f6f1e8" />
+    <title>Coordinator Portal Demo | Sabr Plan Co.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="portal.js" defer></script>
+  </head>
+  <body class="portal-body">
+    <main class="portal-shell" id="main">
+      <section class="portal-login" id="portal-login" aria-labelledby="login-title">
+        <a class="portal-brand" href="index.html" aria-label="Sabr Plan Co. home">
+          <img src="assets/sabr-script.png" alt="" aria-hidden="true" />
+          <span>COORDINATOR PORTAL</span>
+        </a>
+        <div class="portal-login-card">
+          <p class="eyebrow"><span class="eyebrow-line"></span> COORDINATOR WORKSPACE PREVIEW</p>
+          <h1 id="login-title">A little more <em>organized.</em></h1>
+          <p class="portal-intro">A first look at a home for your client calendar, itineraries, and contracts.</p>
+          <div class="portal-demo-notice" role="note">
+            <strong>Prototype only</strong>
+            <span>This demo has no real login or secure storage. Use sample information only—don't upload real client documents.</span>
+          </div>
+          <button class="button button-dark portal-login-button" id="enter-demo" type="button">
+            Enter demo dashboard <span aria-hidden="true">↗</span>
+          </button>
+          <a class="portal-return-link" href="index.html">Return to the public website</a>
+        </div>
+      </section>
+
+      <section class="portal-app" id="portal-app" hidden aria-label="Coordinator dashboard">
+        <aside class="portal-sidebar">
+          <a class="portal-brand" href="index.html" aria-label="Sabr Plan Co. home">
+            <img src="assets/sabr-script.png" alt="" aria-hidden="true" />
+            <span>COORDINATOR PORTAL</span>
+          </a>
+          <div class="portal-profile">
+            <span class="portal-avatar" aria-hidden="true">SC</span>
+            <span><strong>Sabr Plan Co.</strong><small>Coordinator demo</small></span>
+          </div>
+          <nav class="portal-nav" aria-label="Portal sections">
+            <button type="button" class="portal-nav-item is-active" data-view="calendar" aria-current="page">
+              <span aria-hidden="true">▦</span> Calendar
+            </button>
+            <button type="button" class="portal-nav-item" data-view="clients">
+              <span aria-hidden="true">♡</span> Clients
+            </button>
+          </nav>
+          <div class="portal-sidebar-bottom">
+            <p>DEMO WORKSPACE</p>
+            <button type="button" class="portal-logout" id="exit-demo">Exit demo</button>
+          </div>
+        </aside>
+
+        <div class="portal-main">
+          <header class="portal-topbar">
+            <div>
+              <p class="eyebrow"><span class="eyebrow-line"></span> SABR PLAN CO.</p>
+              <h1 id="portal-page-title">Your calendar</h1>
+            </div>
+            <div class="portal-top-actions">
+              <span class="portal-demo-pill">DEMO · NOT SECURE</span>
+              <button type="button" class="button button-dark portal-add-client" id="open-client-form">
+                <span aria-hidden="true">+</span> Add client
+              </button>
+            </div>
+          </header>
+
+          <div class="portal-warning" role="status">
+            <strong>Prototype data only.</strong> Changes and uploaded files exist only in this tab, and are cleared when you exit the demo, refresh, or close the tab.
+          </div>
+
+          <section class="portal-view is-visible" id="calendar-view" aria-labelledby="calendar-heading">
+            <div class="portal-summary-grid" id="portal-summary"></div>
+            <div class="portal-calendar-layout">
+              <section class="portal-card portal-calendar-card" aria-labelledby="calendar-heading">
+                <div class="portal-card-heading">
+                  <div>
+                    <p class="eyebrow"><span class="eyebrow-line"></span> WEDDING DATES</p>
+                    <h2 id="calendar-heading">The calendar</h2>
+                  </div>
+                  <div class="calendar-controls">
+                    <button class="calendar-step" id="previous-month" type="button" aria-label="Previous month">‹</button>
+                    <strong id="calendar-month-label"></strong>
+                    <button class="calendar-step" id="next-month" type="button" aria-label="Next month">›</button>
+                  </div>
+                </div>
+                <div class="calendar-weekdays" aria-hidden="true">
+                  <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                </div>
+                <div class="calendar-grid" id="calendar-grid" role="grid" aria-label="Wedding calendar"></div>
+                <div class="calendar-legend"><span></span> Wedding date</div>
+              </section>
+              <aside class="portal-card portal-agenda-card" aria-labelledby="agenda-heading">
+                <p class="eyebrow"><span class="eyebrow-line"></span> UP NEXT</p>
+                <h2 id="agenda-heading">Upcoming weddings</h2>
+                <div class="portal-agenda-list" id="upcoming-list"></div>
+              </aside>
+            </div>
+          </section>
+
+          <section class="portal-view" id="clients-view" aria-labelledby="clients-heading" hidden>
+            <div class="portal-section-intro">
+              <div>
+                <p class="eyebrow"><span class="eyebrow-line"></span> YOUR COUPLES</p>
+                <h2 id="clients-heading">Client workspaces</h2>
+              </div>
+              <p>Open a couple's workspace to manage their itinerary and contract drafts.</p>
+            </div>
+            <div class="portal-client-grid" id="client-grid"></div>
+          </section>
+
+          <section class="portal-view portal-workspace-view" id="workspace-view" aria-labelledby="workspace-title" hidden>
+            <button type="button" class="portal-back-link" id="back-to-clients">← All clients</button>
+            <div class="portal-section-intro portal-workspace-heading">
+              <div>
+                <p class="eyebrow"><span class="eyebrow-line"></span> CLIENT WORKSPACE</p>
+                <h2 id="workspace-title"></h2>
+                <p class="portal-client-meta" id="workspace-meta"></p>
+              </div>
+              <span class="portal-demo-pill">SAMPLE CLIENT</span>
+            </div>
+            <div class="portal-document-layout">
+              <nav class="portal-document-nav" aria-label="Client documents">
+                <button type="button" class="portal-document-link is-active" data-document="itinerary" aria-current="page">
+                  <span aria-hidden="true">◷</span><span>Itinerary<small>Wedding-day timeline</small></span>
+                </button>
+                <button type="button" class="portal-document-link" data-document="contract">
+                  <span aria-hidden="true">▤</span><span>Contract<small>Agreement workspace</small></span>
+                </button>
+              </nav>
+              <section class="portal-card portal-document-card" id="document-panel" aria-live="polite"></section>
+            </div>
+          </section>
+
+          <section class="portal-view portal-empty-view" id="empty-view" hidden>
+            <div class="portal-empty-card">
+              <p class="eyebrow"><span class="eyebrow-line"></span> WORKSPACE</p>
+              <h2>No clients yet</h2>
+              <p>Add a sample client to start a workspace and place a wedding date on the calendar.</p>
+              <button type="button" class="button button-dark" data-action="add-client">Add a client</button>
+            </div>
+          </section>
+
+          <footer class="portal-footer">
+            <span>Coordinator Portal · Early concept</span>
+            <a href="index.html">Sabr Plan Co. public site ↗</a>
+          </footer>
+        </div>
+
+        <dialog class="portal-dialog" id="client-dialog" aria-labelledby="client-dialog-title">
+          <form class="portal-dialog-form" id="client-form">
+            <div class="portal-dialog-heading">
+              <div>
+                <p class="eyebrow"><span class="eyebrow-line"></span> NEW WORKSPACE</p>
+                <h2 id="client-dialog-title">Add a client</h2>
+              </div>
+              <button class="dialog-close" id="close-client-form" type="button" aria-label="Close dialog">×</button>
+            </div>
+            <label>
+              Couple or client name
+              <input name="name" type="text" placeholder="e.g. Alex + Jamie" required />
+            </label>
+            <label>
+              Wedding date
+              <input name="date" type="date" required />
+            </label>
+            <label>
+              Service
+              <select name="service" required>
+                <option value="" disabled selected>Select a service</option>
+                <option>Day-of coordination</option>
+                <option>Wedding planning</option>
+              </select>
+            </label>
+            <label>
+              Venue or location <span class="portal-optional">(optional)</span>
+              <input name="venue" type="text" placeholder="Venue name or city" />
+            </label>
+            <p class="portal-dialog-note">Demo only: this client is not saved to an account or database.</p>
+            <div class="portal-dialog-actions">
+              <button class="button portal-cancel-button" id="cancel-client-form" type="button">Cancel</button>
+              <button class="button button-dark" type="submit">Create workspace</button>
+            </div>
+          </form>
+        </dialog>
+      </section>
+    </main>
+  </body>
+</html>
