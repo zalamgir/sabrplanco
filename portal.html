@@ -89,6 +89,7 @@
                     <h2 id="calendar-heading">The calendar</h2>
                   </div>
                   <div class="calendar-controls">
+                    <button class="calendar-today" id="calendar-today" type="button">Today</button>
                     <button class="calendar-step" id="previous-month" type="button" aria-label="Previous month">‹</button>
                     <strong id="calendar-month-label"></strong>
                     <button class="calendar-step" id="next-month" type="button" aria-label="Next month">›</button>
@@ -140,11 +141,11 @@
             </div>
             <div class="portal-document-layout">
               <nav class="portal-document-nav" aria-label="Client documents">
-                <button type="button" class="portal-document-link is-active" data-document="itinerary" aria-current="page">
-                  <span aria-hidden="true">◷</span><span>Itinerary<small>Wedding-day timeline</small></span>
-                </button>
-                <button type="button" class="portal-document-link" data-document="contract">
+                <button type="button" class="portal-document-link is-active" data-document="contract" aria-current="page">
                   <span aria-hidden="true">▤</span><span>Contract<small>Agreement workspace</small></span>
+                </button>
+                <button type="button" class="portal-document-link" data-document="itinerary">
+                  <span aria-hidden="true">◷</span><span>Itinerary<small>Wedding-day timeline</small></span>
                 </button>
               </nav>
               <section class="portal-card portal-document-card" id="document-panel" aria-live="polite"></section>

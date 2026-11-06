@@ -22,6 +22,8 @@ Open `index.html` in a browser, then use the navigation to move between pages.
 
 - The website palette is inspired by the supplied Sabr Plan Co. logo: espresso brown, ivory, and warm champagne. The original is preserved in `assets/sabr-plan-co-logo.png`, and the exact script lettering is isolated for use on the site in `assets/sabr-script.png`.
 - The portfolio page includes sample couple tabs and clearly marked photo/review placeholders. Replace them with real names, photos, and client-approved testimonials before presenting them as past work.
+- `assets/sample-wedding-itinerary.pdf` is a fictional sample file for testing the coordinator portal's PDF upload and preview.
+- `assets/sample-wedding-coordination-contract.pdf` is a fictional sample file for testing contract PDF upload and preview; it is not legal language or a usable contract.
 - Review the starter copy and FAQ answers, and replace or expand them with approved business details.
 - The inquiry form submits to Web3Forms. Its public client-side access key is in the form markup; verify `sabrplanco@gmail.com` in Web3Forms and send a test submission before relying on delivery.
 - The coordinator portal is only an interactive prototype. Its demo login is not authentication, and client entries, draft documents, and uploaded PDFs stay in browser memory only. Do not enter real client details or upload real contracts or itineraries. A production portal needs server-side authentication and private database/file storage before it handles client information.

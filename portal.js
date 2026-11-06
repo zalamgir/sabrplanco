@@ -27,7 +27,7 @@ const sampleClients = [
 const clients = [...sampleClients];
 const documents = new Map();
 let activeClientId = null;
-let activeDocument = "itinerary";
+let activeDocument = "contract";
 let activeView = "calendar";
 let calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 let selectedDate = toDateKey(today);
@@ -59,6 +59,7 @@ function getDocumentState(clientId, type) {
       mode: "create",
       uploadUrl: "",
       uploadName: "",
+      uploadKept: false,
       savedDraft: null,
     };
   }
@@ -223,8 +224,20 @@ function renderPdfPreview(state) {
     </div>`;
   }
   return `<div class="portal-pdf-preview">
-    <div class="portal-pdf-heading"><strong>${escapeHtml(state.uploadName)}</strong><button type="button" class="portal-text-button" data-action="remove-upload">Remove file</button></div>
+    <div class="portal-pdf-heading">
+      <strong>${escapeHtml(state.uploadName)}</strong>
+      <span class="portal-upload-status${state.uploadKept ? " is-kept" : ""}" role="status" aria-live="polite">
+        ${state.uploadKept ? "Kept for this session" : "Ready to review"}
+      </span>
+    </div>
     <iframe src="${state.uploadUrl}" title="Temporary PDF preview" class="portal-pdf-frame"></iframe>
+    <div class="portal-upload-actions">
+      ${state.uploadKept ? "" : '<button type="button" class="button button-dark" data-action="keep-upload">Keep this PDF</button>'}
+      <button type="button" class="button portal-delete-upload" data-action="delete-upload">Delete PDF</button>
+    </div>
+    <p class="portal-muted portal-upload-footnote">${state.uploadKept
+      ? "This PDF is kept in this browser session only. It will be cleared when you exit the demo, refresh, or close the tab."
+      : "Review the PDF, then keep it in this demo workspace or delete it."}</p>
   </div>`;
 }
 
@@ -318,7 +331,7 @@ function openWorkspace(clientId) {
   const client = clients.find((item) => item.id === clientId);
   if (!client) return;
   activeClientId = clientId;
-  activeDocument = "itinerary";
+  activeDocument = "contract";
   document.querySelector("#workspace-title").textContent = client.name;
   document.querySelector("#workspace-meta").textContent = `${formatDate(client.date)} · ${client.service}${client.venue ? ` · ${client.venue}` : ""}`;
   renderDocument();
@@ -369,6 +382,12 @@ document.querySelectorAll(".portal-nav-item").forEach((button) => {
 document.querySelector("#previous-month").addEventListener("click", () => {
   calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
   selectedDate = toDateKey(calendarMonth);
+  renderCalendar();
+});
+
+document.querySelector("#calendar-today").addEventListener("click", () => {
+  calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  selectedDate = toDateKey(today);
   renderCalendar();
 });
 
@@ -448,11 +467,18 @@ documentPanel.addEventListener("click", (event) => {
     renderDocument();
     return;
   }
-  if (event.target.closest('[data-action="remove-upload"]')) {
+  if (event.target.closest('[data-action="keep-upload"]')) {
+    const state = getDocumentState(activeClientId, activeDocument);
+    state.uploadKept = true;
+    renderDocument();
+    return;
+  }
+  if (event.target.closest('[data-action="delete-upload"]')) {
     const state = getDocumentState(activeClientId, activeDocument);
     if (state.uploadUrl) URL.revokeObjectURL(state.uploadUrl);
     state.uploadUrl = "";
     state.uploadName = "";
+    state.uploadKept = false;
     renderDocument();
   }
 });
@@ -475,6 +501,7 @@ documentPanel.addEventListener("change", (event) => {
   if (state.uploadUrl) URL.revokeObjectURL(state.uploadUrl);
   state.uploadUrl = URL.createObjectURL(file);
   state.uploadName = file.name;
+  state.uploadKept = false;
   renderDocument();
 });
 

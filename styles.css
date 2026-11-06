@@ -1707,6 +1707,21 @@ h2 em,
   text-align: center;
 }
 
+.calendar-today {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  padding: 0 0.55rem;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.59rem;
+}
+
+.calendar-today:hover {
+  border-color: var(--espresso);
+  background: #f2eade;
+}
+
 .calendar-step,
 .dialog-close {
   width: 32px;
@@ -2311,10 +2326,21 @@ h2 em,
 
 .portal-pdf-heading {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.6rem;
   font-size: 0.65rem;
+}
+
+.portal-upload-status {
+  color: #77573c;
+  font-size: 0.57rem;
+}
+
+.portal-upload-status.is-kept {
+  color: #42634a;
+  font-weight: 600;
 }
 
 .portal-pdf-frame {
@@ -2322,6 +2348,35 @@ h2 em,
   height: min(70vh, 700px);
   border: 1px solid var(--line);
   background: white;
+}
+
+.portal-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.portal-upload-actions .button {
+  min-height: 40px;
+  font-size: 0.63rem;
+}
+
+.portal-delete-upload {
+  border-color: #b98578;
+  background: transparent;
+  color: #8b4539;
+}
+
+.portal-delete-upload:hover {
+  border-color: #8b4539;
+  background: #8b4539;
+  color: #fffaf5;
+}
+
+.portal-upload-footnote {
+  margin: 0.65rem 0 0;
+  font-size: 0.58rem;
 }
 
 .portal-empty-view {
@@ -2600,12 +2655,18 @@ h2 em,
   }
 
   .calendar-controls {
-    gap: 0.35rem;
+    gap: 0.3rem;
   }
 
   .calendar-controls strong {
-    min-width: 90px;
-    font-size: 0.59rem;
+    min-width: 76px;
+    font-size: 0.55rem;
+  }
+
+  .calendar-today {
+    min-height: 27px;
+    padding: 0 0.38rem;
+    font-size: 0.53rem;
   }
 
   .calendar-step {
