@@ -130,7 +130,36 @@ function renderCalendar() {
       </button>`);
   }
   document.querySelector("#calendar-grid").innerHTML = cells.join("");
+  renderSelectedDay();
   renderAgenda();
+}
+
+function renderSelectedDay() {
+  const selectedClients = clients
+    .filter((client) => client.date === selectedDate)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  document.querySelector("#selected-day-heading").textContent = formatDate(selectedDate, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const list = document.querySelector("#selected-day-list");
+  if (!selectedClients.length) {
+    list.innerHTML = '<p class="portal-muted">No weddings scheduled for this date.</p>';
+    return;
+  }
+
+  list.innerHTML = selectedClients.map((client) => `
+    <button class="portal-selected-event" type="button" data-open-client="${escapeHtml(client.id)}">
+      <span class="portal-selected-event-icon" aria-hidden="true">♡</span>
+      <span class="portal-selected-event-copy">
+        <strong>${escapeHtml(client.name)}</strong>
+        <small>${escapeHtml(client.service)}${client.venue ? ` · ${escapeHtml(client.venue)}` : ""}</small>
+      </span>
+      <span class="portal-agenda-arrow" aria-hidden="true">Open workspace ↗</span>
+    </button>`).join("");
 }
 
 function renderAgenda() {
@@ -339,11 +368,13 @@ document.querySelectorAll(".portal-nav-item").forEach((button) => {
 
 document.querySelector("#previous-month").addEventListener("click", () => {
   calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+  selectedDate = toDateKey(calendarMonth);
   renderCalendar();
 });
 
 document.querySelector("#next-month").addEventListener("click", () => {
   calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
+  selectedDate = toDateKey(calendarMonth);
   renderCalendar();
 });
 
@@ -355,6 +386,11 @@ document.querySelector("#calendar-grid").addEventListener("click", (event) => {
 });
 
 document.querySelector("#upcoming-list").addEventListener("click", (event) => {
+  const clientButton = event.target.closest("[data-open-client]");
+  if (clientButton) openWorkspace(clientButton.dataset.openClient);
+});
+
+document.querySelector("#selected-day-list").addEventListener("click", (event) => {
   const clientButton = event.target.closest("[data-open-client]");
   if (clientButton) openWorkspace(clientButton.dataset.openClient);
 });

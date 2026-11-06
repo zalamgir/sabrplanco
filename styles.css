@@ -1595,6 +1595,78 @@ h2 em,
   align-items: start;
 }
 
+.portal-selected-day {
+  margin-top: 1.2rem;
+  padding: clamp(1rem, 2vw, 1.55rem);
+}
+
+.portal-selected-day .portal-card-heading {
+  margin-bottom: 0.8rem;
+}
+
+.portal-selected-day .portal-card-heading h2 {
+  margin-top: 0.4rem;
+  font-size: 1.3rem;
+}
+
+.portal-selected-day-list {
+  display: grid;
+}
+
+.portal-selected-event {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  border: 0;
+  border-top: 1px solid #eee8df;
+  padding: 0.85rem 0.15rem;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.portal-selected-event:hover .portal-selected-event-copy strong {
+  color: var(--rust);
+}
+
+.portal-selected-event-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f1e8dc;
+  color: var(--rust);
+}
+
+.portal-selected-event-copy {
+  min-width: 0;
+}
+
+.portal-selected-event-copy strong,
+.portal-selected-event-copy small {
+  display: block;
+}
+
+.portal-selected-event-copy strong {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.portal-selected-event-copy small {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.61rem;
+  line-height: 1.5;
+}
+
+.portal-selected-event > .portal-agenda-arrow {
+  font-size: 0.6rem;
+}
+
 .portal-card {
   min-width: 0;
   border: 1px solid rgba(59, 38, 27, 0.08);
@@ -2375,6 +2447,10 @@ h2 em,
     column-gap: 1rem;
   }
 
+  .portal-selected-event {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+  }
+
   .portal-client-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2559,6 +2635,19 @@ h2 em,
 
   .portal-agenda-list {
     grid-template-columns: 1fr;
+  }
+
+  .portal-selected-event {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .portal-selected-event-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .portal-selected-event > .portal-agenda-arrow {
+    grid-column: 2;
   }
 
   .portal-section-intro {
