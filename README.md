@@ -10,7 +10,7 @@ A responsive static website for wedding coordination and planning in New Jersey,
 - `portfolio.html` — Couple stories, photo, and review placeholders
 - `faqs.html` — Frequently asked questions
 - `inquiry.html` — Web3Forms inquiry form and direct contact details
-- `portal.html` — Unlisted, admin-only coordinator portal
+- `portal/` — Admin-only coordinator portal at `/portal/` (`portal.html` redirects there)
 
 The shared visual styles live in `styles.css`, `script.js` provides public-site interactions, and `portal.js` runs the coordinator portal. This site uses plain HTML, CSS, and JavaScript; no build step or package installation is needed.
 
@@ -37,7 +37,7 @@ The portal sends a saved uploaded PDF or generated contract/itinerary PDF as an 
 4. Configure the secrets in the linked Supabase project. Replace the example sender with an address on your verified domain; enter the actual API key directly in your terminal, and never add it to browser code or a committed file:
 
    ```sh
-   supabase secrets set RESEND_API_KEY=re_your_secret_key RESEND_FROM_EMAIL='Sabr Plan Co. <documents@mail.sabrplanco.com>' PORTAL_ALLOWED_ORIGINS='http://localhost:8000,https://portal.sabrplanco.com'
+   supabase secrets set RESEND_API_KEY=re_your_secret_key RESEND_FROM_EMAIL='Sabr Plan Co. <documents@mail.sabrplanco.com>' PORTAL_ALLOWED_ORIGINS='http://localhost:8000,https://sabrplanco.com'
    ```
 
 5. Test with your own email address and a disposable client before sending client documents. The Edge Function checks the authenticated portal admin and client workspace before sending, and limits attachments to PDFs no larger than 15 MB.
@@ -67,7 +67,7 @@ When an itinerary PDF is selected, the coordinator can separately choose **Conve
 
 The function uses the same `PORTAL_ALLOWED_ORIGINS` setting as client email delivery and checks the signed-in user against the portal admin allowlist before accessing Gemini. Redeploy it after changing its code so structured event details, vendor assignments, and notes are available to AI-generated drafts.
 
-Password recovery redirects back to `portal.html` on the current host. In Supabase Authentication URL Configuration, allow both `http://localhost:8000/portal.html` and `https://portal.sabrplanco.com/portal.html` as redirect URLs. Keep the production Site URL set to `https://portal.sabrplanco.com`. The production portal URL must be deployed before production password resets can be tested.
+Password recovery redirects back to `/portal/` on the current host. In Supabase Authentication URL Configuration, allow both `http://localhost:8000/portal/` and `https://sabrplanco.com/portal/` as redirect URLs. Set the production Site URL to `https://sabrplanco.com`. The production portal URL must be deployed before production password resets can be tested.
 
 ## Preview locally
 
@@ -81,4 +81,4 @@ Open `index.html` in a browser, then use the navigation to move between pages.
 - `assets/sample-wedding-coordination-contract.pdf` is a fictional sample file for testing contract PDF upload and preview; it is not legal language or a usable contract.
 - Review the starter copy and FAQ answers, and replace or expand them with approved business details.
 - The inquiry form submits to Web3Forms. Its public client-side access key is in the form markup; verify `sabrplanco@gmail.com` in Web3Forms and send a test submission before relying on delivery.
-- The coordinator portal uses Supabase email/password authentication and checks the `portal_admins` allowlist before showing its dashboard. Its database integration still needs an end-to-end test with disposable records and a PDF, plus verification from a non-admin account, before you use it for real client information or documents. The sign-in screen must be served from a deployed HTTPS host before the portal can be used at `portal.sabrplanco.com`. The sample-derived contract remains a draft and must be reviewed and approved before client use.
+- The coordinator portal is available at `/portal/`, uses Supabase email/password authentication, and checks the `portal_admins` allowlist before showing its dashboard. Its database integration still needs an end-to-end test with disposable records and a PDF, plus verification from a non-admin account, before you use it for real client information or documents. The sign-in screen must be served from a deployed HTTPS host before the portal can be used with real client information or documents. The sample-derived contract remains a draft and must be reviewed and approved before client use.

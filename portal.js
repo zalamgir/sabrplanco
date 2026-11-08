@@ -215,7 +215,7 @@ function loadScriptLogoImage() {
         scriptLogoImagePromise = null;
         reject(new Error("The Sabr Plan Co. script logo could not be loaded for the PDF."));
       };
-      image.src = new URL("assets/sabr-script.png", document.baseURI).href;
+      image.src = new URL("../assets/sabr-script.png", document.baseURI).href;
     });
   }
   return scriptLogoImagePromise;
@@ -1269,7 +1269,7 @@ function renderSavedPreview(state, type, client) {
   return `<div class="portal-contract-output">
     <section class="portal-draft-preview portal-contract-sheet" aria-label="Generated wedding coordination agreement">
       <header class="portal-contract-header">
-        <img src="assets/sabr-script.png" alt="Sabr Plan Co." />
+        <img src="../assets/sabr-script.png" alt="Sabr Plan Co." />
         <p>WEDDING PLANNING &amp; COORDINATION</p>
       </header>
       <div class="portal-contract-title">
