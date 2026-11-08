@@ -16,7 +16,7 @@
     <script src="portal-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <script src="portal.js" defer></script>
   </head>
   <body class="portal-body">
@@ -83,7 +83,7 @@
             <span>COORDINATOR PORTAL</span>
           </a>
           <div class="portal-profile">
-            <span class="portal-avatar" aria-hidden="true">SC</span>
+            <span class="portal-avatar" aria-hidden="true"><img src="assets/sabr-script.png" alt="" /></span>
             <span><strong>Sabr Plan Co.</strong><small id="portal-user-email">Admin</small></span>
           </div>
           <nav class="portal-nav" aria-label="Portal sections">
@@ -94,6 +94,11 @@
               <span aria-hidden="true">♡</span> Clients
             </button>
           </nav>
+          <div class="portal-sidebar-preferences">
+            <button type="button" class="portal-nav-item portal-settings-nav" data-view="settings">
+              <span aria-hidden="true">⚙</span> Settings
+            </button>
+          </div>
           <div class="portal-sidebar-bottom">
             <p>ADMIN WORKSPACE</p>
             <button type="button" class="portal-logout" id="portal-sign-out">Sign out</button>
@@ -117,6 +122,33 @@
           <div class="portal-warning" id="portal-data-notice" role="status" aria-live="polite">
             <strong>Connecting.</strong> Loading private portal data from Supabase…
           </div>
+
+          <section class="portal-view" id="settings-view" aria-labelledby="settings-heading" hidden>
+            <div class="portal-section-intro">
+              <div>
+                <p class="eyebrow"><span class="eyebrow-line"></span> PREFERENCES</p>
+                <h2 id="settings-heading">Portal settings</h2>
+              </div>
+              <p>Personalize how the coordinator portal looks on this device.</p>
+            </div>
+            <section class="portal-card portal-settings-card" aria-labelledby="theme-heading">
+              <div>
+                <p class="eyebrow"><span class="eyebrow-line"></span> APPEARANCE</p>
+                <h3 id="theme-heading">Theme</h3>
+                <p class="portal-muted">Choose the light theme or a darker palette for the portal.</p>
+              </div>
+              <div class="portal-theme-options" role="group" aria-label="Portal theme">
+                <button type="button" class="portal-theme-option" data-theme-option="light" aria-pressed="true">
+                  <span class="portal-theme-preview portal-theme-preview-light" aria-hidden="true"><span></span><i></i><i></i></span>
+                  <span><strong>Light mode</strong><small>Current warm ivory theme</small></span>
+                </button>
+                <button type="button" class="portal-theme-option" data-theme-option="dark" aria-pressed="false">
+                  <span class="portal-theme-preview portal-theme-preview-dark" aria-hidden="true"><span></span><i></i><i></i></span>
+                  <span><strong>Dark mode</strong><small>Espresso and warm neutral tones</small></span>
+                </button>
+              </div>
+            </section>
+          </section>
 
           <section class="portal-view is-visible" id="calendar-view" aria-labelledby="calendar-heading">
             <div class="portal-summary-grid" id="portal-summary"></div>
@@ -176,7 +208,10 @@
                 <h2 id="workspace-title"></h2>
                 <p class="portal-client-meta" id="workspace-meta"></p>
               </div>
-              <span class="portal-demo-pill">PRIVATE WORKSPACE</span>
+              <div class="portal-workspace-actions">
+                <span class="portal-demo-pill">PRIVATE WORKSPACE</span>
+                <button type="button" class="button portal-delete-client" id="delete-client-workspace">Delete client</button>
+              </div>
             </div>
             <div class="portal-document-layout">
               <nav class="portal-document-nav" aria-label="Client documents">
