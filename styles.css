@@ -1350,6 +1350,76 @@ h2 em,
   margin-top: 1.4rem;
 }
 
+.portal-signin-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.4rem;
+}
+
+.portal-signin-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--ink);
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+
+.portal-signin-form input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #ded5c9;
+  border-radius: 0;
+  padding: 0.65rem 0.7rem;
+  background: #fffefa;
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 400;
+}
+
+.portal-signin-form input:focus {
+  border-color: var(--rust);
+  outline: 2px solid rgba(150, 106, 77, 0.2);
+}
+
+.portal-signin-form .portal-login-button {
+  margin-top: 0;
+}
+
+.portal-login-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.portal-text-button {
+  display: block;
+  margin: 0.2rem auto 0;
+  border: 0;
+  padding: 0.2rem;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.7rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.portal-text-button:hover {
+  color: var(--espresso);
+}
+
+.portal-login-status {
+  min-height: 1.2em;
+  margin: 0;
+  color: #8b4539;
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.portal-login-status.is-success {
+  color: #536b52;
+}
+
 .portal-return-link {
   display: block;
   margin-top: 1.15rem;
@@ -1542,6 +1612,31 @@ h2 em,
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
   font-size: 0.66rem;
+}
+
+.portal-warning.is-error {
+  border-left-color: #9c463c;
+  background: #f5e5e0;
+  color: #783c35;
+}
+
+.portal-warning.is-error strong {
+  color: #642f2a;
+}
+
+.portal-form-status:empty {
+  display: none;
+}
+
+.portal-form-status:not(:empty) {
+  margin: 0;
+  color: #8b4539;
+  font-size: 0.65rem;
+  line-height: 1.5;
+}
+
+.portal-form-status.is-success {
+  color: #42634a;
 }
 
 .portal-summary-grid {
@@ -2111,6 +2206,7 @@ h2 em,
 
 .portal-template-form input,
 .portal-template-form textarea,
+.portal-template-form select,
 .portal-dialog-form input,
 .portal-dialog-form select {
   width: 100%;
@@ -2126,6 +2222,7 @@ h2 em,
 
 .portal-template-form input:focus,
 .portal-template-form textarea:focus,
+.portal-template-form select:focus,
 .portal-dialog-form input:focus,
 .portal-dialog-form select:focus {
   border-color: var(--rust);
@@ -2162,7 +2259,7 @@ h2 em,
 
 .portal-event-row {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(90px, 0.4fr) minmax(90px, 0.4fr) 28px;
+  grid-template-columns: minmax(150px, 1fr) minmax(130px, 0.55fr) minmax(130px, 0.55fr) 28px;
   gap: 0.6rem;
   align-items: end;
   border-bottom: 1px solid #eee8df;
@@ -2171,6 +2268,23 @@ h2 em,
 
 .portal-event-name {
   min-width: 0;
+}
+
+.portal-time-inputs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.portal-time-inputs input {
+  flex: 1;
+  min-width: 0;
+}
+
+.portal-time-inputs select {
+  width: 3.5rem;
+  flex: 0 0 3.5rem;
+  padding-right: 0.25rem;
+  padding-left: 0.25rem;
 }
 
 .portal-remove-event {
@@ -2206,11 +2320,385 @@ h2 em,
   font-size: 0.6rem;
 }
 
+.portal-draft-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.portal-draft-actions .button {
+  min-height: 38px;
+  font-size: 0.62rem;
+}
+
 .portal-draft-preview {
   margin-top: 1.6rem;
   border: 1px solid #d9cbbb;
   padding: 1.2rem;
   background: #fffefa;
+}
+
+.portal-contract-calculations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.5rem;
+  border: 1px solid #e6ddd1;
+  padding: 0.8rem 1rem;
+  background: #f7f2eb;
+}
+
+.portal-contract-calculations p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.64rem;
+}
+
+.portal-contract-calculations strong {
+  margin-left: 0.35rem;
+  color: var(--espresso);
+}
+
+.portal-contract-output {
+  margin-top: 1.6rem;
+}
+
+.portal-contract-sheet {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: clamp(1.2rem, 3.6vw, 2.8rem);
+  color: #38291f;
+  background: #fffefa;
+  box-shadow: 0 18px 48px rgba(59, 38, 27, 0.1);
+  font-family: var(--sans);
+}
+
+.portal-contract-sheet.is-pdf-export {
+  padding: 1rem;
+  box-shadow: none;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-header {
+  padding-bottom: 0.6rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-header img {
+  width: 160px;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-header p {
+  font-size: 0.44rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-title {
+  margin: 0.65rem 0;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-title h4 {
+  font-size: 1.25rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-details,
+.portal-contract-sheet.is-pdf-export .portal-contract-fees {
+  gap: 0.15rem;
+  padding: 0.5rem 0;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-details p,
+.portal-contract-sheet.is-pdf-export .portal-contract-fees p {
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-section {
+  margin-top: 0.5rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-section h5 {
+  margin-bottom: 0.3rem;
+  padding-bottom: 0.25rem;
+  font-size: 0.98rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-section ul {
+  gap: 0.18rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-section li,
+.portal-contract-sheet.is-pdf-export .portal-contract-section > p {
+  font-size: 0.62rem;
+  line-height: 1.4;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-section > p + p {
+  margin-top: 0.4rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-photo-term {
+  padding-top: 0.5rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-contact {
+  margin: 0.65rem 0;
+  font-size: 0.62rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-signatures {
+  gap: 1.4rem;
+  margin-top: 0.85rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-signatures span {
+  height: 1.1rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-signatures > div {
+  font-size: 0.58rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-signatures small {
+  font-size: 0.52rem;
+}
+
+.portal-contract-sheet.is-pdf-export .portal-contract-draft-note {
+  margin-top: 0.75rem;
+  font-size: 0.42rem;
+}
+
+.portal-contract-header {
+  display: grid;
+  justify-items: center;
+  border-bottom: 1px solid #d9cbbb;
+  padding-bottom: 1rem;
+  text-align: center;
+}
+
+.portal-contract-header img {
+  width: min(185px, 46%);
+  height: auto;
+}
+
+.portal-contract-header p {
+  margin: 0.3rem 0 0;
+  color: #80654d;
+  font-size: 0.48rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+}
+
+.portal-contract-title {
+  margin: 1.25rem 0 1rem;
+  text-align: center;
+}
+
+.portal-contract-title p {
+  margin: 0 0 0.3rem;
+  color: var(--rust);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+}
+
+.portal-contract-title h4 {
+  margin: 0;
+  font: 500 1.4rem / 1.25 var(--serif);
+}
+
+.portal-contract-details,
+.portal-contract-fees {
+  display: grid;
+  gap: 0.25rem;
+  border-top: 1px solid #e6ddd1;
+  padding: 0.8rem 0;
+}
+
+.portal-contract-details p,
+.portal-contract-fees p {
+  margin: 0;
+  font-size: 0.64rem;
+  line-height: 1.55;
+}
+
+.portal-contract-details strong,
+.portal-contract-fees strong {
+  color: #38291f;
+}
+
+.portal-contract-section {
+  margin-top: 0.75rem;
+  break-inside: avoid;
+}
+
+.portal-contract-section h5 {
+  margin: 0 0 0.45rem;
+  border-bottom: 1px solid #d9cbbb;
+  padding-bottom: 0.35rem;
+  font: 500 1rem var(--serif);
+}
+
+.portal-contract-section ul {
+  display: grid;
+  gap: 0.32rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.portal-contract-section li,
+.portal-contract-section > p {
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.55;
+}
+
+.portal-contract-section > p + p {
+  margin-top: 0.55rem;
+}
+
+.portal-contract-photo-term {
+  border-top: 1px solid #d9cbbb;
+  padding-top: 0.7rem;
+}
+
+.portal-contract-contact {
+  margin: 1rem 0;
+  font-size: 0.62rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.portal-contract-signatures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+  margin-top: 1.5rem;
+  break-inside: avoid;
+}
+
+.portal-contract-signatures > div {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.58rem;
+}
+
+.portal-contract-signatures span {
+  height: 1.5rem;
+  border-bottom: 1px solid #80654d;
+}
+
+.portal-contract-signatures strong {
+  font-weight: 500;
+}
+
+.portal-contract-signatures small {
+  color: var(--muted);
+  font-size: 0.55rem;
+}
+
+.portal-contract-draft-note {
+  margin-top: 1.4rem;
+  color: #80654d;
+  font-size: 0.46rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-align: center;
+}
+
+.portal-contract-actions {
+  display: flex;
+  justify-content: flex-end;
+  max-width: 760px;
+  margin: 0.8rem auto 0;
+}
+
+.portal-contract-actions .button {
+  min-height: 38px;
+  font-size: 0.62rem;
+}
+
+.portal-itinerary-sheet {
+  max-width: 860px;
+  margin: 1.3rem auto 0;
+  border-color: #e6ddd1;
+  padding: clamp(1.2rem, 3.6vw, 3rem);
+  background:
+    linear-gradient(90deg, transparent 0, transparent 96%, rgba(114, 81, 57, 0.035) 100%),
+    #fffefa;
+  box-shadow: 0 18px 48px rgba(59, 38, 27, 0.1);
+}
+
+.portal-itinerary-sheet-header {
+  border-bottom: 1px solid #d9cbbb;
+  padding-bottom: 1.2rem;
+}
+
+.portal-itinerary-wordmark {
+  color: #80654d;
+  font-size: 0.53rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.portal-itinerary-wordmark span {
+  padding: 0 0.25rem;
+  color: var(--rust);
+}
+
+.portal-itinerary-sheet-header > p {
+  margin: 1.6rem 0 0.35rem;
+  color: var(--rust);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.portal-itinerary-sheet-header h4 {
+  margin: 0;
+  font: 400 clamp(1.5rem, 4vw, 2.35rem) / 1.2 var(--serif);
+}
+
+.portal-itinerary-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.3rem;
+}
+
+.portal-itinerary-details span {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.portal-itinerary-details small {
+  color: var(--rust);
+  font-size: 0.48rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.portal-itinerary-details strong {
+  font-size: 0.67rem;
+  font-weight: 500;
+}
+
+.portal-itinerary-section-title {
+  margin: 1.4rem 0 0.3rem;
+  color: var(--espresso);
+  font: 500 1.1rem var(--serif);
+}
+
+.portal-itinerary-sheet .portal-preview-timeline {
+  margin-top: 0.6rem;
+}
+
+.portal-itinerary-sheet .portal-preview-timeline li:nth-child(even) {
+  background: #f7f2eb;
+}
+
+.portal-itinerary-sheet-footer {
+  margin-top: 1.5rem;
+  border-top: 1px solid #e6ddd1;
+  padding-top: 0.7rem;
+  color: var(--muted);
+  font-size: 0.53rem;
 }
 
 .portal-preview-header {
@@ -2343,11 +2831,106 @@ h2 em,
   font-weight: 600;
 }
 
-.portal-pdf-frame {
-  width: 100%;
-  height: min(70vh, 700px);
-  border: 1px solid var(--line);
+.portal-pdf-viewer {
+  overflow: hidden;
+  border: 1px solid #d8d1c8;
+  background: #f0ede8;
+  box-shadow: 0 12px 32px rgba(59, 38, 27, 0.09);
+}
+
+.portal-pdf-toolbar {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0.9rem;
+  background: #fffefa;
+}
+
+.portal-pdf-toolbar-label {
+  color: #80654d;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.portal-pdf-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--ink);
+  font-size: 0.63rem;
+}
+
+.portal-pdf-page-divider {
+  color: #a3998e;
+}
+
+.portal-pdf-page-button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ded5c9;
+  border-radius: 50%;
+  background: #fffefa;
+  color: var(--espresso);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.portal-pdf-page-button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.portal-pdf-canvas-wrap {
+  min-height: 300px;
+  display: grid;
+  place-items: start center;
+  overflow: auto;
+  padding: clamp(1rem, 3vw, 2rem);
+  background:
+    radial-gradient(ellipse at center, rgba(255, 255, 255, 0.5), transparent 70%),
+    #e8e4de;
+}
+
+.portal-pdf-canvas-wrap canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
   background: white;
+  box-shadow: 0 6px 24px rgba(44, 35, 29, 0.2);
+}
+
+.portal-pdf-loading {
+  align-self: center;
+  margin: 1rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-align: center;
+}
+
+.portal-pdf-loading[hidden] {
+  display: none;
+}
+
+.portal-pdf-preview > .portal-muted {
+  margin: 0.8rem 0;
+  font-size: 0.65rem;
+  line-height: 1.6;
+}
+
+.portal-itinerary-document {
+  margin-top: 1.2rem;
+}
+
+.portal-itinerary-document .portal-pdf-heading {
+  padding: 0 0.15rem 0.3rem;
+}
+
+.portal-itinerary-document .portal-upload-footnote {
+  margin-bottom: 0;
 }
 
 .portal-upload-actions {
@@ -2512,6 +3095,23 @@ h2 em,
 }
 
 @media (max-width: 760px) {
+  .portal-itinerary-details {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .portal-itinerary-details span:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .portal-pdf-canvas-wrap {
+    min-height: 240px;
+    padding: 0.75rem;
+  }
+
+  .portal-pdf-toolbar {
+    padding: 0.45rem 0.65rem;
+  }
+
   .portal-app:not([hidden]) {
     display: flex;
     flex-direction: column;
@@ -2762,8 +3362,12 @@ h2 em,
   }
 
   .portal-event-row {
-    grid-template-columns: minmax(0, 1fr) minmax(74px, 0.55fr) minmax(74px, 0.55fr) 28px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 28px;
     gap: 0.35rem;
+  }
+
+  .portal-event-name {
+    grid-column: 1 / -1;
   }
 
   .portal-event-row label {
@@ -2773,6 +3377,11 @@ h2 em,
   .portal-event-row input {
     padding: 0.55rem 0.35rem;
     font-size: 0.59rem;
+  }
+
+  .portal-event-row select {
+    padding: 0.55rem 0.2rem;
+    font-size: 0.53rem;
   }
 
   .portal-form-actions {
@@ -2823,7 +3432,7 @@ h2 em,
   }
 
   .portal-event-row {
-    grid-template-columns: minmax(0, 1fr) minmax(62px, 0.48fr) minmax(62px, 0.48fr) 26px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 26px;
     gap: 0.25rem;
   }
 }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#f6f1e8" />
-    <title>Coordinator Portal Demo | Sabr Plan Co.</title>
+    <title>Coordinator Portal | Sabr Plan Co.</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -13,6 +13,10 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <script src="portal-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
     <script src="portal.js" defer></script>
   </head>
   <body class="portal-body">
@@ -23,16 +27,51 @@
           <span>COORDINATOR PORTAL</span>
         </a>
         <div class="portal-login-card">
-          <p class="eyebrow"><span class="eyebrow-line"></span> COORDINATOR WORKSPACE PREVIEW</p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> ADMIN SIGN-IN</p>
           <h1 id="login-title">A little more <em>organized.</em></h1>
-          <p class="portal-intro">A first look at a home for your client calendar, itineraries, and contracts.</p>
+          <p class="portal-intro">Sign in with the approved coordinator account to access the workspace.</p>
           <div class="portal-demo-notice" role="note">
-            <strong>Prototype only</strong>
-            <span>This demo has no real login or secure storage. Use sample information only—don't upload real client documents.</span>
+            <strong>Admin access only</strong>
+            <span>Only accounts explicitly approved for the portal can sign in. Public sign-up is disabled.</span>
           </div>
-          <button class="button button-dark portal-login-button" id="enter-demo" type="button">
-            Enter demo dashboard <span aria-hidden="true">↗</span>
-          </button>
+          <form class="portal-signin-form" id="portal-signin-form">
+            <label>
+              Admin email
+              <input name="email" type="email" autocomplete="username" required />
+            </label>
+            <label>
+              Password
+              <input name="password" type="password" autocomplete="current-password" required />
+            </label>
+            <button class="button button-dark portal-login-button" id="portal-signin-button" type="submit">
+              Sign in <span aria-hidden="true">↗</span>
+            </button>
+          </form>
+          <button class="portal-text-button" id="show-password-recovery" type="button">Forgot password?</button>
+          <form class="portal-signin-form" id="portal-recovery-form" hidden>
+            <label>
+              Admin email
+              <input name="email" type="email" autocomplete="username" required />
+            </label>
+            <button class="button button-dark portal-login-button" id="portal-recovery-button" type="submit">
+              Send recovery email <span aria-hidden="true">↗</span>
+            </button>
+            <button class="portal-text-button" id="back-to-sign-in" type="button">Back to sign in</button>
+          </form>
+          <form class="portal-signin-form" id="portal-password-form" hidden>
+            <label>
+              New password
+              <input name="password" type="password" autocomplete="new-password" minlength="8" required />
+            </label>
+            <label>
+              Confirm new password
+              <input name="confirm-password" type="password" autocomplete="new-password" minlength="8" required />
+            </label>
+            <button class="button button-dark portal-login-button" id="portal-password-button" type="submit">
+              Set new password <span aria-hidden="true">↗</span>
+            </button>
+          </form>
+          <p class="portal-login-status" id="portal-login-status" role="status" aria-live="polite"></p>
           <a class="portal-return-link" href="index.html">Return to the public website</a>
         </div>
       </section>
@@ -45,7 +84,7 @@
           </a>
           <div class="portal-profile">
             <span class="portal-avatar" aria-hidden="true">SC</span>
-            <span><strong>Sabr Plan Co.</strong><small>Coordinator demo</small></span>
+            <span><strong>Sabr Plan Co.</strong><small id="portal-user-email">Admin</small></span>
           </div>
           <nav class="portal-nav" aria-label="Portal sections">
             <button type="button" class="portal-nav-item is-active" data-view="calendar" aria-current="page">
@@ -56,8 +95,8 @@
             </button>
           </nav>
           <div class="portal-sidebar-bottom">
-            <p>DEMO WORKSPACE</p>
-            <button type="button" class="portal-logout" id="exit-demo">Exit demo</button>
+            <p>ADMIN WORKSPACE</p>
+            <button type="button" class="portal-logout" id="portal-sign-out">Sign out</button>
           </div>
         </aside>
 
@@ -68,15 +107,15 @@
               <h1 id="portal-page-title">Your calendar</h1>
             </div>
             <div class="portal-top-actions">
-              <span class="portal-demo-pill">DEMO · NOT SECURE</span>
+              <span class="portal-demo-pill">ADMIN ACCESS · PRIVATE DATA</span>
               <button type="button" class="button button-dark portal-add-client" id="open-client-form">
                 <span aria-hidden="true">+</span> Add client
               </button>
             </div>
           </header>
 
-          <div class="portal-warning" role="status">
-            <strong>Prototype data only.</strong> Changes and uploaded files exist only in this tab, and are cleared when you exit the demo, refresh, or close the tab.
+          <div class="portal-warning" id="portal-data-notice" role="status" aria-live="polite">
+            <strong>Connecting.</strong> Loading private portal data from Supabase…
           </div>
 
           <section class="portal-view is-visible" id="calendar-view" aria-labelledby="calendar-heading">
@@ -137,7 +176,7 @@
                 <h2 id="workspace-title"></h2>
                 <p class="portal-client-meta" id="workspace-meta"></p>
               </div>
-              <span class="portal-demo-pill">SAMPLE CLIENT</span>
+              <span class="portal-demo-pill">PRIVATE WORKSPACE</span>
             </div>
             <div class="portal-document-layout">
               <nav class="portal-document-nav" aria-label="Client documents">
@@ -156,7 +195,7 @@
             <div class="portal-empty-card">
               <p class="eyebrow"><span class="eyebrow-line"></span> WORKSPACE</p>
               <h2>No clients yet</h2>
-              <p>Add a sample client to start a workspace and place a wedding date on the calendar.</p>
+              <p>Add a client to start a workspace and place a wedding date on the calendar.</p>
               <button type="button" class="button button-dark" data-action="add-client">Add a client</button>
             </div>
           </section>
@@ -188,18 +227,18 @@
               Service
               <select name="service" required>
                 <option value="" disabled selected>Select a service</option>
-                <option>Day-of coordination</option>
-                <option>Wedding planning</option>
+                <option value="day_of_coordination">Day-of coordination</option>
+                <option value="wedding_planning">Wedding planning</option>
               </select>
             </label>
             <label>
               Venue or location <span class="portal-optional">(optional)</span>
               <input name="venue" type="text" placeholder="Venue name or city" />
             </label>
-            <p class="portal-dialog-note">Demo only: this client is not saved to an account or database.</p>
+            <p class="portal-form-status" id="portal-client-status" role="status" aria-live="polite"></p>
             <div class="portal-dialog-actions">
               <button class="button portal-cancel-button" id="cancel-client-form" type="button">Cancel</button>
-              <button class="button button-dark" type="submit">Create workspace</button>
+              <button class="button button-dark" id="portal-client-submit" type="submit">Create workspace</button>
             </div>
           </form>
         </dialog>
