@@ -14,6 +14,12 @@ A responsive static website for wedding coordination and planning in New Jersey,
 
 The shared visual styles live in `styles.css`, `script.js` provides public-site interactions, and `portal.js` runs the coordinator portal. This site uses plain HTML, CSS, and JavaScript; no build step or package installation is needed.
 
+## Install the coordinator portal
+
+The portal is installable as a Progressive Web App (PWA). On iPhone, open `https://sabrplanco.com/portal/` in Safari, tap **Share**, then **Add to Home Screen**. On supported desktop or Android browsers, use the browser's install-app option. The app opens directly to the portal and continues to require Supabase sign-in.
+
+The portal service worker is scoped to `/portal/` and uses network-only requests. It does not cache client records, PDFs, authentication responses, or other portal data; an internet connection is required.
+
 ## Coordinator portal security setup
 
 The portal database schema and Row Level Security policies are in `supabase/migrations/20261107010000_portal_schema.sql`. Apply this migration in the Supabase SQL Editor before connecting the portal. It creates a private PDF bucket and restricts client records, document drafts, and files to users explicitly listed in `public.portal_admins`.
