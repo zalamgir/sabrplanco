@@ -693,13 +693,14 @@ h2 em,
   opacity: 0.7;
 }
 
-.form-honeypot {
+.inquiry-form input.form-honeypot {
   position: absolute;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+  pointer-events: none;
 }
 
 .form-note {
@@ -4051,5 +4052,127 @@ h2 em,
 
   .portal-event-table {
     min-width: 760px;
+  }
+}
+
+@media (max-width: 650px) {
+  .menu-toggle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .inquiry-form input,
+  .inquiry-form select,
+  .inquiry-form textarea {
+    font-size: 16px;
+  }
+
+  .portal-login {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom));
+  }
+
+  .portal-login > .portal-brand {
+    position: static;
+    width: min(155px, 100%);
+    align-self: center;
+  }
+
+  .portal-login-card {
+    width: 100%;
+    padding: clamp(1.25rem, 7vw, 2rem);
+  }
+
+  .portal-body input:not([type="checkbox"]),
+  .portal-body select,
+  .portal-body textarea {
+    font-size: 16px;
+  }
+
+  .portal-nav-item,
+  .portal-document-link {
+    min-height: 44px;
+  }
+
+  .calendar-today {
+    min-height: 40px;
+  }
+
+  .portal-calendar-card .portal-card-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .calendar-controls {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.25rem;
+  }
+
+  .calendar-controls strong {
+    min-width: 0;
+  }
+
+  .calendar-step,
+  .portal-pdf-page-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .portal-itinerary-sheet {
+    padding: 1rem;
+  }
+
+  .portal-itinerary-timeline-table,
+  .portal-itinerary-timeline-table tbody {
+    display: block;
+  }
+
+  .portal-itinerary-timeline-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .portal-itinerary-timeline-table tbody tr {
+    display: block;
+    margin-top: 0.6rem;
+    border: 1px solid #eee8df;
+    padding: 0.45rem 0.6rem;
+  }
+
+  .portal-itinerary-timeline-table tbody td {
+    display: grid;
+    grid-template-columns: minmax(4rem, 0.35fr) minmax(0, 1fr);
+    gap: 0.6rem;
+    border: 0;
+    padding: 0.28rem 0;
+    font-size: 0.68rem;
+  }
+
+  .portal-itinerary-timeline-table tbody td::before {
+    color: #80654d;
+    content: attr(data-label);
+    font-size: 0.53rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .portal-itinerary-timeline-table tbody td[colspan] {
+    display: block;
+  }
+
+  .portal-itinerary-timeline-table tbody td[colspan]::before {
+    display: none;
   }
 }
