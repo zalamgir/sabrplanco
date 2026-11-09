@@ -1,0 +1,26 @@
+{
+  "id": "/portal/",
+  "name": "Sabr Plan Co. Coordinator Portal",
+  "short_name": "Sabr Portal",
+  "description": "Private wedding coordination workspace for Sabr Plan Co.",
+  "start_url": "/portal/",
+  "scope": "/portal/",
+  "display": "standalone",
+  "background_color": "#f6f1e8",
+  "theme_color": "#f6f1e8",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "../assets/portal-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../assets/portal-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
