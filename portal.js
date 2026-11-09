@@ -722,7 +722,7 @@ function renderSelectedDay() {
         <strong>${escapeHtml(client.name)}</strong>
         <small>${escapeHtml(client.service)}${client.venue ? ` · ${escapeHtml(client.venue)}` : ""}</small>
       </span>
-      <span class="portal-agenda-arrow" aria-hidden="true">Open workspace ↗</span>
+      <span class="portal-agenda-arrow" aria-hidden="true">Open workspace ↗︎</span>
     </button>`).join("");
 }
 
@@ -739,7 +739,7 @@ function renderAgenda() {
     <button class="portal-agenda-item" type="button" data-open-client="${escapeHtml(client.id)}">
       <span class="portal-agenda-date"><strong>${new Date(`${client.date}T12:00:00`).getDate()}</strong><small>${new Date(`${client.date}T12:00:00`).toLocaleDateString("en-US", { month: "short" })}</small></span>
       <span class="portal-agenda-copy"><strong>${escapeHtml(client.name)}</strong><small>${escapeHtml(client.venue || client.service)}</small></span>
-      <span class="portal-agenda-arrow" aria-hidden="true">↗</span>
+      <span class="portal-agenda-arrow" aria-hidden="true">↗︎</span>
     </button>`).join("");
 }
 
@@ -747,7 +747,7 @@ function renderClients() {
   const grid = document.querySelector("#client-grid");
   grid.innerHTML = clients.map((client) => `
     <button class="portal-client-card" type="button" data-open-client="${escapeHtml(client.id)}">
-      <span class="portal-client-card-top"><span class="portal-client-avatar" aria-hidden="true">♡</span><span class="portal-agenda-arrow" aria-hidden="true">↗</span></span>
+      <span class="portal-client-card-top"><span class="portal-client-avatar" aria-hidden="true">♡</span><span class="portal-agenda-arrow" aria-hidden="true">↗︎</span></span>
       <strong>${escapeHtml(client.name)}</strong>
       <span class="portal-client-date">${escapeHtml(formatDate(client.date))}</span>
       <span class="portal-client-service">${escapeHtml(client.service)}</span>
@@ -1628,7 +1628,7 @@ signInForm.addEventListener("submit", async (event) => {
     signInStatus.textContent = error.message || "Unable to sign in. Please try again.";
   } finally {
     signInButton.disabled = false;
-    signInButton.innerHTML = 'Sign in <span aria-hidden="true">↗</span>';
+    signInButton.innerHTML = 'Sign in <span aria-hidden="true">↗︎</span>';
   }
 });
 
@@ -1662,7 +1662,7 @@ recoveryForm.addEventListener("submit", async (event) => {
     signInStatus.textContent = error.message || "Unable to send a recovery email. Please try again.";
   } finally {
     recoveryButton.disabled = false;
-    recoveryButton.innerHTML = 'Send recovery email <span aria-hidden="true">↗</span>';
+    recoveryButton.innerHTML = 'Send recovery email <span aria-hidden="true">↗︎</span>';
   }
 });
 
@@ -1695,7 +1695,7 @@ passwordForm.addEventListener("submit", async (event) => {
     signInStatus.textContent = error.message || "Unable to update the password. Request a new recovery email and try again.";
   } finally {
     passwordButton.disabled = false;
-    passwordButton.innerHTML = 'Set new password <span aria-hidden="true">↗</span>';
+    passwordButton.innerHTML = 'Set new password <span aria-hidden="true">↗︎</span>';
   }
 });
 
