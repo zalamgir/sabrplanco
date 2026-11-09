@@ -1775,6 +1775,12 @@ document.querySelectorAll(".portal-nav-item").forEach((button) => {
   });
 });
 
+document.querySelector("#portal-calendar-brand").addEventListener("click", (event) => {
+  event.preventDefault();
+  showView("calendar");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
 document.querySelectorAll("[data-theme-option]").forEach((button) => {
   button.addEventListener("click", () => {
     applyPortalTheme(button.dataset.themeOption, true);
