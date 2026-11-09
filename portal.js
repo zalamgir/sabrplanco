@@ -1229,10 +1229,10 @@ function renderSavedPreview(state, type, client) {
             const end = event.end ? formatTime(event.end) : "";
             const time = start && end ? `${start}–${end}` : start || end || "—";
             return `<tr>
-              <td class="portal-itinerary-time">${escapeHtml(time)}</td>
-              <td>${escapeHtml(event.title)}</td>
-              <td>${escapeHtml(event.vendor || "—")}</td>
-              <td class="portal-itinerary-event-notes">${escapeHtml(event.notes || "—")}</td>
+              <td class="portal-itinerary-time" data-label="Time">${escapeHtml(time)}</td>
+              <td data-label="Event">${escapeHtml(event.title)}</td>
+              <td data-label="Vendor">${escapeHtml(event.vendor || "—")}</td>
+              <td class="portal-itinerary-event-notes" data-label="Notes">${escapeHtml(event.notes || "—")}</td>
             </tr>`;
           }).join("") || '<tr><td colspan="4" class="portal-itinerary-empty-row">No events added.</td></tr>'}</tbody>
         </table>
