@@ -1419,6 +1419,8 @@ function renderContractSettingsForm() {
   });
   form.querySelector("fieldset").disabled = !contractSettingsAvailable;
   form.querySelector('button[type="submit"]').disabled = !contractSettingsAvailable;
+  // Open the section when it needs attention, so the setup message isn't hidden.
+  if (!contractSettingsAvailable) form.closest("details").open = true;
   form.querySelector(".portal-form-status").textContent = contractSettingsAvailable
     ? ""
     : `Saving contract details needs a one-time database update. Run ${PORTAL_SETTINGS_MIGRATION} in the Supabase SQL Editor, then reload the portal.`;
@@ -2040,9 +2042,11 @@ document.querySelectorAll(".portal-nav-item").forEach((button) => {
   button.addEventListener("click", () => {
     if (button.dataset.view === "clients" && !clients.length) {
       showView("empty");
-      return;
+    } else {
+      showView(button.dataset.view);
     }
-    showView(button.dataset.view);
+    // Settings sits at the bottom of the page, so jump to the top of the newly shown page.
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 });
 

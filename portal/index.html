@@ -16,13 +16,13 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="../styles.css?v=20261110m" />
-    <script src="../portal-config.js?v=20261110m"></script>
+    <link rel="stylesheet" href="../styles.css?v=20261110n" />
+    <script src="../portal-config.js?v=20261110n"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    <script src="../portal.js?v=20261110m" defer></script>
-    <script src="pwa.js?v=20261110m" defer></script>
+    <script src="../portal.js?v=20261110n" defer></script>
+    <script src="pwa.js?v=20261110n" defer></script>
   </head>
   <body class="portal-body">
     <div class="portal-pull-indicator" id="portal-pull-indicator" aria-hidden="true">
@@ -134,62 +134,77 @@
               </div>
               <p>Choose how the portal looks and set the details printed on contracts.</p>
             </div>
-            <section class="portal-card portal-settings-card" aria-labelledby="theme-heading">
-              <div>
-                <p class="eyebrow"><span class="eyebrow-line"></span> APPEARANCE</p>
-                <h3 id="theme-heading">Theme</h3>
-                <p class="portal-muted">Choose the light theme or a darker palette for the portal.</p>
-              </div>
-              <div class="portal-theme-options" role="group" aria-label="Portal theme">
-                <button type="button" class="portal-theme-option" data-theme-option="light" aria-pressed="true">
-                  <span class="portal-theme-preview portal-theme-preview-light" aria-hidden="true"><span></span><i></i><i></i></span>
-                  <span><strong>Light mode</strong><small>Current warm ivory theme</small></span>
-                </button>
-                <button type="button" class="portal-theme-option" data-theme-option="dark" aria-pressed="false">
-                  <span class="portal-theme-preview portal-theme-preview-dark" aria-hidden="true"><span></span><i></i><i></i></span>
-                  <span><strong>Dark mode</strong><small>Espresso and warm neutral tones</small></span>
-                </button>
-              </div>
-            </section>
             <section class="portal-card portal-settings-card portal-contract-settings" aria-labelledby="contract-settings-heading">
-              <div>
-                <p class="eyebrow"><span class="eyebrow-line"></span> CONTRACTS</p>
-                <h3 id="contract-settings-heading">Contract details</h3>
-                <p class="portal-muted">Payment and contact details printed on contracts. Changes apply to contracts you save from now on. Contracts already saved keep the details they were created with.</p>
-              </div>
-              <form class="portal-template-form" id="contract-settings-form">
-                <fieldset class="portal-dialog-details">
-                  <label>Deposit payment method
-                    <input name="depositPayment" type="text" maxlength="200" required placeholder="e.g. Zelle (929) 240-2040" />
-                    <span class="portal-email-recipient-help">Appears as "30% ($300) via …"</span>
-                  </label>
-                  <label>Balance payment method
-                    <input name="balancePayment" type="text" maxlength="200" required placeholder="e.g. Cash, check, or Zelle" />
-                    <span class="portal-email-recipient-help">Appears as "Balance … due by the event date via …"</span>
-                  </label>
-                  <label>Contact email on contracts
-                    <input name="contactEmail" type="email" maxlength="200" required />
-                  </label>
-                  <label>Contact phone on contracts
-                    <input name="contactPhone" type="tel" maxlength="40" />
-                  </label>
-                  <label>Coordinator name (signature line)
-                    <input name="coordinatorName" type="text" maxlength="120" />
-                  </label>
-                  <label>Services included
-                    <textarea name="services" rows="10" maxlength="40000" required></textarea>
-                    <span class="portal-email-recipient-help">One service per line. Each line becomes a bullet point on the contract.</span>
-                  </label>
-                  <label>Terms &amp; cancellations
-                    <textarea name="cancellationTerms" rows="10" maxlength="40000" required></textarea>
-                    <span class="portal-email-recipient-help">Leave a blank line between terms. Each term becomes its own paragraph.</span>
-                  </label>
-                </fieldset>
-                <div class="portal-form-actions">
-                  <span class="portal-form-status" role="status" aria-live="polite"></span>
-                  <button type="submit" class="button button-dark">Save contract details</button>
+              <details class="portal-settings-disclosure">
+                <summary>
+                  <span class="portal-settings-summary-text">
+                    <span class="eyebrow"><span class="eyebrow-line"></span> CONTRACTS</span>
+                    <h3 id="contract-settings-heading">Contract details</h3>
+                    <span class="portal-muted">Payment details, services, and terms printed on contracts.</span>
+                  </span>
+                  <span class="portal-settings-chevron" aria-hidden="true"></span>
+                </summary>
+                <div class="portal-settings-body">
+                  <p class="portal-muted portal-settings-note">Changes apply to contracts you save from now on. Contracts already saved keep the details they were created with.</p>
+                  <form class="portal-template-form" id="contract-settings-form">
+                    <fieldset class="portal-dialog-details">
+                      <label>Deposit payment method
+                        <input name="depositPayment" type="text" maxlength="200" required placeholder="e.g. Zelle (929) 240-2040" />
+                        <span class="portal-email-recipient-help">Appears as "30% ($300) via …"</span>
+                      </label>
+                      <label>Balance payment method
+                        <input name="balancePayment" type="text" maxlength="200" required placeholder="e.g. Cash, check, or Zelle" />
+                        <span class="portal-email-recipient-help">Appears as "Balance … due by the event date via …"</span>
+                      </label>
+                      <label>Contact email on contracts
+                        <input name="contactEmail" type="email" maxlength="200" required />
+                      </label>
+                      <label>Contact phone on contracts
+                        <input name="contactPhone" type="tel" maxlength="40" />
+                      </label>
+                      <label>Coordinator name (signature line)
+                        <input name="coordinatorName" type="text" maxlength="120" />
+                      </label>
+                      <label>Services included
+                        <textarea name="services" rows="10" maxlength="40000" required></textarea>
+                        <span class="portal-email-recipient-help">One service per line. Each line becomes a bullet point on the contract.</span>
+                      </label>
+                      <label>Terms &amp; cancellations
+                        <textarea name="cancellationTerms" rows="10" maxlength="40000" required></textarea>
+                        <span class="portal-email-recipient-help">Leave a blank line between terms. Each term becomes its own paragraph.</span>
+                      </label>
+                    </fieldset>
+                    <div class="portal-form-actions">
+                      <span class="portal-form-status" role="status" aria-live="polite"></span>
+                      <button type="submit" class="button button-dark">Save contract details</button>
+                    </div>
+                  </form>
                 </div>
-              </form>
+              </details>
+            </section>
+            <section class="portal-card portal-settings-card" aria-labelledby="theme-heading">
+              <details class="portal-settings-disclosure">
+                <summary>
+                  <span class="portal-settings-summary-text">
+                    <span class="eyebrow"><span class="eyebrow-line"></span> APPEARANCE</span>
+                    <h3 id="theme-heading">Theme</h3>
+                    <span class="portal-muted">Choose the light theme or a darker palette for the portal.</span>
+                  </span>
+                  <span class="portal-settings-chevron" aria-hidden="true"></span>
+                </summary>
+                <div class="portal-settings-body">
+                  <div class="portal-theme-options" role="group" aria-label="Portal theme">
+                    <button type="button" class="portal-theme-option" data-theme-option="light" aria-pressed="true">
+                      <span class="portal-theme-preview portal-theme-preview-light" aria-hidden="true"><span></span><i></i><i></i></span>
+                      <span><strong>Light mode</strong><small>Current warm ivory theme</small></span>
+                    </button>
+                    <button type="button" class="portal-theme-option" data-theme-option="dark" aria-pressed="false">
+                      <span class="portal-theme-preview portal-theme-preview-dark" aria-hidden="true"><span></span><i></i><i></i></span>
+                      <span><strong>Dark mode</strong><small>Espresso and warm neutral tones</small></span>
+                    </button>
+                  </div>
+                </div>
+              </details>
             </section>
           </section>
 
