@@ -1481,16 +1481,17 @@ function renderEmailForm(client, type, state) {
         <option value="client">Client</option>
         <option value="vendors">Vendors</option>
       </select></label>` : ""}
-      <label data-recipient-label>Client email address(es)
+      <div class="portal-email-recipient-field">
+        <label for="email-recipient-entry-${type}" data-recipient-label>Client email address(es)</label>
         <div class="portal-email-recipient-entry">
           <div class="portal-email-recipient-list" data-recipient-list>${storedRecipients.map(renderEmailRecipient).join("")}</div>
           <div class="portal-email-recipient-controls">
-            <input name="recipient-entry" type="email" autocomplete="email" placeholder="Enter one email address" />
+            <input id="email-recipient-entry-${type}" name="recipient-entry" type="email" autocomplete="email" placeholder="Enter one email address" />
             <button type="button" class="button portal-email-add-recipient" data-action="add-email-recipient">Add email</button>
           </div>
           <span class="portal-email-recipient-help">Add each address separately, up to five recipients.</span>
         </div>
-      </label>
+      </div>
       <label>Subject<input name="subject" type="text" maxlength="200" required value="${escapeHtml(defaultSubject)}" data-client-subject="${escapeHtml(defaultSubject)}"${supportsVendorRecipients ? ` data-vendor-subject="${escapeHtml(vendorSubject)}"` : ""} /></label>
       <label>Message
         <div class="portal-email-message-editor">
@@ -2136,6 +2137,7 @@ documentPanel.addEventListener("click", async (event) => {
   }
   const removeRecipientButton = event.target.closest('[data-action="remove-email-recipient"]');
   if (removeRecipientButton) {
+    event.preventDefault();
     removeRecipientButton.closest("[data-email-recipient]").remove();
     return;
   }
@@ -2938,6 +2940,7 @@ clientEmailEntry.addEventListener("keydown", (event) => {
 clientEmailList.addEventListener("click", (event) => {
   const removeButton = event.target.closest('[data-action="remove-email-recipient"]');
   if (!removeButton) return;
+  event.preventDefault();
   removeButton.closest("[data-email-recipient]").remove();
   clientEmailEntry.focus();
 });

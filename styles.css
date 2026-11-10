@@ -2894,7 +2894,8 @@ h2 em,
   padding: 1rem;
 }
 
-.portal-email-form > label {
+.portal-email-form > label,
+.portal-email-recipient-field > label {
   display: grid;
   gap: 0.35rem;
   color: var(--ink);
@@ -4635,4 +4636,9 @@ h2 em,
 
 .portal-app[data-theme="dark"] .portal-date-day.is-selected::after {
   background: #211c17;
+}
+
+.portal-email-recipient-field {
+  display: grid;
+  gap: 0.35rem;
 }
