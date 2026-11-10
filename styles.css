@@ -2993,9 +2993,36 @@ h2 em,
 
 .portal-email-add-recipient {
   min-height: 38px;
-  padding: 0.5rem 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-color: #c5aa8b;
+  border-radius: 0;
+  background: transparent;
+  color: var(--espresso);
+  -webkit-appearance: none;
+  appearance: none;
   white-space: nowrap;
   font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.portal-email-add-recipient:hover,
+.portal-email-add-recipient:focus-visible {
+  border-color: var(--espresso);
+  background: var(--espresso);
+  color: #fffaf5;
+}
+
+.portal-app[data-theme="dark"] .portal-email-add-recipient {
+  border-color: #71583e;
+  color: #f3ece3;
+}
+
+.portal-app[data-theme="dark"] .portal-email-add-recipient:hover,
+.portal-app[data-theme="dark"] .portal-email-add-recipient:focus-visible {
+  border-color: #dfbd98;
+  background: #dfbd98;
+  color: #211c17;
 }
 
 .portal-email-recipient-help {
