@@ -4653,3 +4653,101 @@ h2 em,
 .portal-form-grid {
   align-items: start;
 }
+
+/* Itinerary timeline editor: stack each event as a card on phones and small tablets */
+@media (max-width: 760px) {
+  .portal-event-table-wrap {
+    overflow: visible;
+    border: 0;
+  }
+
+  .portal-event-table,
+  .portal-event-table tbody,
+  .portal-event-table tr,
+  .portal-event-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .portal-event-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .portal-event-table tr.portal-event-row {
+    position: relative;
+    margin-bottom: 0.8rem;
+    border: 1px solid #e6ddd1;
+    padding: 0.9rem 0.9rem 0.5rem;
+    background: #fffefa;
+  }
+
+  .portal-event-table tr.portal-event-row::before {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--rust);
+    content: attr(data-event-number);
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .portal-event-table td,
+  .portal-event-table tbody tr:last-child td {
+    border-bottom: 0;
+    padding: 0.35rem 0;
+  }
+
+  .portal-event-table td[data-label]::before {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--ink);
+    content: attr(data-label);
+    font-size: 0.56rem;
+    font-weight: 600;
+  }
+
+  .portal-event-time-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .portal-event-table .portal-time-inputs select {
+    width: 3.6rem;
+    flex-basis: 3.6rem;
+  }
+
+  .portal-event-table td.portal-event-remove-cell {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.6rem;
+    width: auto;
+    padding: 0;
+  }
+
+  .portal-event-table .portal-remove-event {
+    margin-top: 0;
+  }
+
+  .portal-event-table textarea {
+    min-height: 4.2rem;
+  }
+
+  .portal-app[data-theme="dark"] .portal-event-table tr.portal-event-row {
+    border-color: #40362d;
+    background: #29231d;
+  }
+
+  .portal-app[data-theme="dark"] .portal-event-table tr.portal-event-row::before {
+    color: #dfbd98;
+  }
+
+  .portal-app[data-theme="dark"] .portal-event-table td[data-label]::before {
+    color: #f3ece3;
+  }
+}
