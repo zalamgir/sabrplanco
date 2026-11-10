@@ -1296,12 +1296,14 @@ function renderItinerary(client, state) {
     return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> ITINERARY</p><h3>Your wedding-day itinerary</h3></div><span class="portal-draft-label">SAVED PDF</span></div>
       ${renderDocumentModeButtons("itinerary", state)}
       ${state.savedDraft ? '<div class="portal-draft-actions"><button type="button" class="button portal-text-button" data-action="view-formatted-itinerary">View formatted itinerary</button></div>' : ""}
+      ${renderOfflinePanel(client, state)}
       <div class="portal-itinerary-document">${renderPdfPreview(state)}</div>
       ${renderEmailForm(client, "itinerary", state)}`;
   }
   if (state.mode === "view" && state.viewSource === "draft" && state.savedDraft) {
     return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> ITINERARY</p><h3>Your wedding-day itinerary</h3></div><span class="portal-draft-label">SAVED ITINERARY</span></div>
       ${renderDocumentModeButtons("itinerary", state)}
+      ${renderOfflinePanel(client, state)}
       ${renderSavedPreview(state, "itinerary", client)}
       <div class="portal-draft-actions">
         <button type="button" class="button button-dark" data-action="download-formatted-itinerary">Download formatted itinerary PDF</button>
@@ -1928,6 +1930,8 @@ async function authorizePortalUser(user) {
     .maybeSingle();
 
   if (error) {
+    // A dropped connection is not a reason to sign the coordinator out.
+    if (isNetworkError(error)) throw new Error(`Network error: ${error.message || "no connection"}`);
     await supabaseClient.auth.signOut();
     throw new Error("Unable to verify portal administrator access. Check the Supabase migration and RLS policies.");
   }
@@ -1939,6 +1943,7 @@ async function authorizePortalUser(user) {
   await Promise.all([
     loadPortalData(),
     loadContractSettings(),
+    refreshOfflineIndex(),
     // Inquiries are optional for signing in: show the problem on the Inquiries page instead.
     loadInquiries().catch((error) => {
       inquiriesLoadError = error.message || "Unknown error";
@@ -2057,11 +2062,15 @@ document.querySelector("#portal-sign-out").addEventListener("click", async () =>
     warning.textContent = "Sign out failed. Please retry and close this browser tab when finished.";
     return;
   }
+  const hadOfflineCopies = offlineIndex.size > 0;
+  await clearOfflineItineraries().catch(() => {});
   clearPortalData();
   portalApp.hidden = true;
   loginScreen.hidden = false;
   showLoginMode("sign-in");
-  signInStatus.textContent = "You have signed out.";
+  signInStatus.textContent = hadOfflineCopies
+    ? "You have signed out. Itineraries saved on this phone were removed."
+    : "You have signed out.";
 });
 
 async function restorePortalSession() {
@@ -2098,7 +2107,14 @@ async function restorePortalSession() {
       }
     }
   } catch (error) {
-    signInStatus.textContent = error.message || "Unable to verify this session. Please sign in again.";
+    // No signal: open the itineraries saved on this phone instead of the sign-in screen.
+    if (isNetworkError(error) && hasStoredSession() && (await listOfflineItineraries().catch(() => [])).length) {
+      showOfflineMode();
+      return;
+    }
+    signInStatus.textContent = isNetworkError(error)
+      ? "You're offline. Connect to the internet to sign in."
+      : error.message || "Unable to verify this session. Please sign in again.";
   } finally {
     signInButton.disabled = false;
   }
@@ -3041,6 +3057,9 @@ documentPanel.addEventListener("submit", async (event) => {
   renderDocument();
   documentPanel.querySelector(".portal-form-status").textContent = "Draft saved securely.";
   setPortalNotice("The document draft was saved to Supabase.");
+  if (type === "itinerary" && offlineIndex.has(clientId)) {
+    saveItineraryOffline(client, state, { quiet: true }).catch(() => {});
+  }
 });
 
 // Site-styled date picker. Each field is a [data-date-field] wrapper holding a hidden
@@ -4100,3 +4119,273 @@ window.visualViewport?.addEventListener("resize", () => {
     if (Math.abs(wanted - current) / Math.max(current, 0.01) > 0.15) renderPdfPage(state, { quiet: true });
   }, 250);
 });
+
+// Wedding-day offline access ----------------------------------------------------
+// Itineraries the coordinator chooses are saved in this phone's browser storage
+// (IndexedDB) so they open at a venue with no signal. They're removed on sign-out,
+// when removed by hand, or automatically a few days after the wedding.
+
+const OFFLINE_DB_NAME = "sabr-portal-offline";
+const OFFLINE_STORE = "itineraries";
+const OFFLINE_KEEP_DAYS_AFTER_WEDDING = 3;
+const offlineIndex = new Map(); // clientId -> savedAt
+const offlineSection = document.querySelector("#portal-offline");
+let offlineOpenedFromApp = false;
+
+function isNetworkError(error) {
+  if (!navigator.onLine) return true;
+  const message = `${error?.message || ""} ${error?.name || ""}`;
+  return /failed to fetch|load failed|networkerror|network request failed|network error|fetch failed|the internet connection appears to be offline/i.test(message);
+}
+
+function hasStoredSession() {
+  try {
+    return Object.keys(window.localStorage).some((key) => /^sb-.+-auth-token$/.test(key));
+  } catch {
+    return false;
+  }
+}
+
+function openOfflineDb() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      reject(new Error("This browser can't save itineraries for offline use."));
+      return;
+    }
+    const request = window.indexedDB.open(OFFLINE_DB_NAME, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore(OFFLINE_STORE, { keyPath: "clientId" });
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function offlineStore(mode, action) {
+  const db = await openOfflineDb();
+  try {
+    return await new Promise((resolve, reject) => {
+      const transaction = db.transaction(OFFLINE_STORE, mode);
+      const request = action(transaction.objectStore(OFFLINE_STORE));
+      transaction.oncomplete = () => resolve(request?.result);
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error || new Error("The phone's storage refused the save."));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+async function listOfflineItineraries() {
+  const records = (await offlineStore("readonly", (store) => store.getAll())) || [];
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() - OFFLINE_KEEP_DAYS_AFTER_WEDDING);
+  const cutoffKey = toDateKey(cutoff);
+  const expired = records.filter((record) => record.weddingDate && record.weddingDate < cutoffKey);
+  if (expired.length) {
+    await offlineStore("readwrite", (store) => {
+      expired.forEach((record) => store.delete(record.clientId));
+    }).catch(() => {});
+  }
+  return records
+    .filter((record) => !expired.includes(record))
+    .sort((a, b) => (a.weddingDate || "").localeCompare(b.weddingDate || ""));
+}
+
+async function refreshOfflineIndex() {
+  offlineIndex.clear();
+  try {
+    (await listOfflineItineraries()).forEach((record) => offlineIndex.set(record.clientId, record.savedAt));
+  } catch {
+    // Offline storage unavailable (e.g. private browsing); the feature just stays empty.
+  }
+  renderOfflineBanner();
+}
+
+async function clearOfflineItineraries() {
+  await offlineStore("readwrite", (store) => store.clear());
+  offlineIndex.clear();
+  renderOfflineBanner();
+}
+
+async function saveItineraryOffline(client, state, { quiet = false } = {}) {
+  let pdf = null;
+  if (state.uploadedDocument) {
+    const { data, error } = await supabaseClient.storage.from("portal-documents").download(state.uploadedDocument.storage_path);
+    if (error) throw new Error(`The itinerary PDF could not be downloaded: ${error.message}`);
+    pdf = data;
+  }
+  if (!state.savedDraft && !pdf) throw new Error("Save the itinerary first.");
+  const record = {
+    clientId: client.id,
+    clientName: client.name,
+    weddingDate: state.savedDraft?.date || client.date,
+    venue: state.savedDraft?.venue || client.venue || "",
+    draft: state.savedDraft || null,
+    pdf,
+    pdfName: state.uploadedDocument?.file_name || "",
+    savedAt: new Date().toISOString(),
+  };
+  await offlineStore("readwrite", (store) => store.put(record));
+  offlineIndex.set(client.id, record.savedAt);
+  renderOfflineBanner();
+  if (activeClientId === client.id && activeDocument === "itinerary") refreshOfflinePanel(client);
+  if (!quiet) setPortalNotice(`${client.name}'s itinerary is saved on this phone and will open without signal.`);
+}
+
+async function removeItineraryOffline(clientId) {
+  await offlineStore("readwrite", (store) => store.delete(clientId));
+  offlineIndex.delete(clientId);
+  renderOfflineBanner();
+}
+
+function renderOfflinePanel(client, state) {
+  if (!state.savedDraft && !state.uploadedDocument) return "";
+  const savedAt = offlineIndex.get(client.id);
+  return `<section class="portal-offline-panel${savedAt ? " is-saved" : ""}" data-offline-panel>
+    <div>
+      <p class="eyebrow"><span class="eyebrow-line"></span> WEDDING-DAY OFFLINE ACCESS</p>
+      <p class="portal-muted">${savedAt
+        ? `Saved on this phone ${escapeHtml(formatSentAt(savedAt))}. It opens even with no signal, and updates automatically when you save changes here.`
+        : "Save this itinerary on this phone so it opens at the venue even with no signal."}</p>
+    </div>
+    <div class="portal-signature-actions">
+      <button type="button" class="button ${savedAt ? "portal-edit-client" : "button-dark portal-inquiry-convert"}" data-offline-action="save">${savedAt ? "Update saved copy" : "Save for offline"}</button>
+      ${savedAt ? '<button type="button" class="button portal-delete-client" data-offline-action="remove">Remove from phone</button>' : ""}
+    </div>
+  </section>`;
+}
+
+function refreshOfflinePanel(client) {
+  const panel = documentPanel.querySelector("[data-offline-panel]");
+  if (panel) panel.outerHTML = renderOfflinePanel(client, getDocumentState(client.id, "itinerary"));
+}
+
+documentPanel.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-offline-action]");
+  if (!button) return;
+  const client = clients.find((item) => item.id === activeClientId);
+  if (!client) return;
+  button.disabled = true;
+  try {
+    if (button.dataset.offlineAction === "save") {
+      button.textContent = "Saving…";
+      await saveItineraryOffline(client, getDocumentState(client.id, "itinerary"));
+    } else {
+      await removeItineraryOffline(client.id);
+      refreshOfflinePanel(client);
+      setPortalNotice(`${client.name}'s itinerary was removed from this phone.`);
+    }
+  } catch (error) {
+    button.disabled = false;
+    setPortalNotice(`Offline copy not updated: ${error.message || "Unknown error"}`, true);
+    refreshOfflinePanel(client);
+  }
+});
+
+function renderOfflineBanner() {
+  const banner = document.querySelector("#open-offline");
+  const count = offlineIndex.size;
+  banner.hidden = count === 0;
+  banner.innerHTML = count
+    ? `<span aria-hidden="true">⬇</span> ${count} ${count === 1 ? "itinerary" : "itineraries"} saved on this phone for offline use <span class="portal-offline-banner-link">View</span>`
+    : "";
+}
+
+document.querySelector("#open-offline").addEventListener("click", () => showOfflineMode({ fromApp: true }));
+
+async function showOfflineMode({ fromApp = false } = {}) {
+  offlineOpenedFromApp = fromApp;
+  loginScreen.hidden = true;
+  portalApp.hidden = true;
+  offlineSection.hidden = false;
+  document.querySelector("#offline-note").textContent = fromApp
+    ? "These itineraries are saved on this phone and open without internet. They're removed a few days after each wedding, or when you sign out."
+    : "You're offline. The itineraries you saved on this phone are below. Connect to the internet for everything else.";
+  document.querySelector("#offline-retry").hidden = fromApp;
+  document.querySelector("#offline-back").hidden = !fromApp;
+  closeOfflineViewer();
+  await renderOfflineList();
+  window.scrollTo(0, 0);
+}
+
+async function renderOfflineList() {
+  const list = document.querySelector("#offline-list");
+  let records = [];
+  try {
+    records = await listOfflineItineraries();
+  } catch {
+    list.innerHTML = '<p class="portal-muted">Saved itineraries couldn\'t be opened on this phone.</p>';
+    return;
+  }
+  list.innerHTML = records.length
+    ? records.map((record) => `<article class="portal-card portal-offline-item">
+        <div>
+          <strong>${escapeHtml(record.clientName)}</strong>
+          <small>${escapeHtml(record.weddingDate ? formatDate(record.weddingDate) : "Date to be confirmed")}${record.venue ? ` · ${escapeHtml(record.venue)}` : ""}</small>
+          <small>Saved ${escapeHtml(formatSentAt(record.savedAt))}</small>
+        </div>
+        <button type="button" class="button button-dark portal-inquiry-convert" data-offline-open="${escapeHtml(record.clientId)}">Open</button>
+      </article>`).join("")
+    : '<p class="portal-muted">No itineraries are saved on this phone yet. Open a client\'s itinerary while connected and choose Save for offline.</p>';
+}
+
+function closeOfflineViewer() {
+  document.querySelector("#offline-viewer").hidden = true;
+  document.querySelector("#offline-list").hidden = false;
+  const content = document.querySelector("#offline-viewer-content");
+  content.querySelectorAll("[data-offline-pdf-link]").forEach((link) => URL.revokeObjectURL(link.href));
+  content.innerHTML = "";
+}
+
+async function openOfflineItinerary(clientId) {
+  const record = (await listOfflineItineraries()).find((item) => item.clientId === clientId);
+  if (!record) return;
+  const content = document.querySelector("#offline-viewer-content");
+  const pdfUrl = record.pdf ? URL.createObjectURL(record.pdf) : "";
+  content.innerHTML = `
+    ${record.draft ? renderSavedPreview({ savedDraft: record.draft }, "itinerary", { name: record.clientName, date: record.weddingDate, venue: record.venue }) : ""}
+    ${pdfUrl ? `<div class="portal-offline-pdf">
+      <p class="eyebrow"><span class="eyebrow-line"></span> ${record.draft ? "ORIGINAL PDF" : "ITINERARY PDF"}</p>
+      <a class="button portal-edit-client" data-offline-pdf-link href="${pdfUrl}" target="_blank" rel="noopener">Open ${escapeHtml(record.pdfName || "itinerary PDF")}</a>
+      <div class="portal-offline-pdf-pages" data-offline-pdf-pages></div>
+    </div>` : ""}`;
+  document.querySelector("#offline-list").hidden = true;
+  document.querySelector("#offline-viewer").hidden = false;
+  window.scrollTo(0, 0);
+  if (record.pdf && window.pdfjsLib) {
+    try {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      const pdf = await window.pdfjsLib.getDocument({ data: await record.pdf.arrayBuffer(), isEvalSupported: false }).promise;
+      const pages = content.querySelector("[data-offline-pdf-pages]");
+      for (let number = 1; number <= pdf.numPages; number += 1) {
+        const page = await pdf.getPage(number);
+        const width = pages.clientWidth || 600;
+        const base = page.getViewport({ scale: 1 });
+        const viewport = page.getViewport({ scale: (width / base.width) * Math.min((window.devicePixelRatio || 1) * 1.5, 4) });
+        const canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.className = "portal-offline-pdf-page";
+        pages.append(canvas);
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+      }
+    } catch {
+      // The "Open" link above still opens the PDF in the phone's viewer.
+    }
+  }
+}
+
+document.querySelector("#offline-list").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-offline-open]");
+  if (button) openOfflineItinerary(button.dataset.offlineOpen);
+});
+document.querySelector("#offline-close-viewer").addEventListener("click", () => {
+  closeOfflineViewer();
+  window.scrollTo(0, 0);
+});
+document.querySelector("#offline-back").addEventListener("click", () => {
+  offlineSection.hidden = true;
+  closeOfflineViewer();
+  portalApp.hidden = false;
+  window.scrollTo(0, 0);
+});
+document.querySelector("#offline-retry").addEventListener("click", () => window.location.reload());

@@ -21,7 +21,9 @@ The portal is installable as a Progressive Web App (PWA). On iPhone, open `https
 
 When opened from the Home Screen, pull down from the top of the portal to refresh it; it reloads the latest data and portal updates and reopens the same page. If a form has unsaved changes, it asks before refreshing.
 
-The portal service worker is scoped to `/portal/` and uses network-only requests. It does not cache client records, PDFs, authentication responses, or other portal data; an internet connection is required.
+The portal service worker is scoped to `/portal/`. It keeps a copy of the portal app itself (pages, scripts, styles, fonts, icons) so it can open without signal, fetching fresh copies whenever online. It never caches Supabase requests (client records, files, sign-in).
+
+**Wedding-day offline access:** on a client's saved itinerary, **Save for offline** stores that itinerary (and its uploaded PDF, if any) in the phone's browser storage. If the portal is opened with no connection, it shows the saved itineraries instead of the sign-in screen (only if this phone was previously signed in). Saved copies update automatically when the itinerary is saved again, are deleted a few days after the wedding, can be removed individually, and are all removed on sign-out. A dropped connection no longer signs the coordinator out.
 
 ## Coordinator portal security setup
 

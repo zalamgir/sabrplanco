@@ -5347,3 +5347,151 @@ body:has(.portal-app[data-theme="dark"]) .portal-pull-indicator {
   border-color: #71583e;
   background: #fffefa;
 }
+
+/* Wedding-day offline access */
+.portal-offline {
+  min-height: 100vh;
+  padding: clamp(1rem, 4vw, 2.5rem);
+}
+
+.portal-offline > .portal-brand {
+  width: 150px;
+  margin: 0 auto 1.6rem;
+}
+
+.portal-offline-body {
+  width: min(100%, 880px);
+  margin: 0 auto;
+}
+
+.portal-offline-body h1 {
+  margin: 0.6rem 0 0.5rem;
+  color: var(--espresso);
+  font: 400 clamp(1.9rem, 6vw, 2.6rem) var(--serif);
+}
+
+.portal-offline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0 1.4rem;
+}
+
+.portal-offline-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.portal-offline-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+}
+
+.portal-offline-item strong,
+.portal-offline-item small {
+  display: block;
+}
+
+.portal-offline-item strong {
+  color: var(--espresso);
+  font: 500 1.2rem var(--serif);
+}
+
+.portal-offline-item small {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.portal-offline-viewer {
+  display: grid;
+  gap: 1rem;
+}
+
+.portal-offline-pdf {
+  display: grid;
+  gap: 0.7rem;
+  justify-items: start;
+}
+
+.portal-offline-pdf-pages {
+  width: 100%;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.portal-offline-pdf-page {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.portal-offline-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem 1.2rem;
+  margin: 0 0 1.2rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--rust);
+  padding: 0.9rem 1.1rem;
+  background: #fffcf7;
+}
+
+.portal-offline-panel .portal-muted {
+  max-width: 460px;
+  margin: 0.35rem 0 0;
+}
+
+.portal-offline-panel.is-saved {
+  border-left-color: #5f7a4f;
+}
+
+.portal-offline-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--line);
+  padding: 0.75rem 1rem;
+  background: #fffcf7;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.66rem;
+  text-align: left;
+}
+
+.portal-offline-banner > span:first-child {
+  color: var(--rust);
+}
+
+.portal-offline-banner-link {
+  margin-left: auto;
+  color: var(--rust);
+  font-weight: 600;
+}
+
+.portal-app[data-theme="dark"] .portal-offline-panel,
+.portal-app[data-theme="dark"] .portal-offline-banner {
+  border-color: #40362d;
+  background: #29231d;
+  color: #f3ece3;
+}
+
+@media (max-width: 650px) {
+  .portal-offline-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.portal-offline-viewer > .portal-back-link {
+  justify-self: start;
+}
