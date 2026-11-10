@@ -3,7 +3,8 @@
 // open without signal. Same-origin files are network-first, so updates still arrive
 // whenever there is a connection. Supabase requests (client data, files, sign-in) are
 // never cached here; itineraries saved for offline use live in the page's own storage.
-const CACHE = "sabr-portal-shell-v2";
+// Bump this name to discard everything cached by an older version of this worker.
+const CACHE = "sabr-portal-shell-v3";
 const CDN_HOSTS = new Set(["cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"]);
 
 self.addEventListener("install", (event) => {
@@ -42,9 +43,11 @@ async function networkFirst(request) {
 async function cacheFirst(request) {
   const cache = await caches.open(CACHE);
   const cached = await cache.match(request);
-  if (cached) return cached;
+  // An opaque (no-cors) copy can't satisfy a CORS request such as a JavaScript module
+  // import, so fetch a proper copy instead of returning a response the page must reject.
+  if (cached && !(cached.type === "opaque" && request.mode === "cors")) return cached;
   const response = await fetch(request);
-  if (response.ok || response.type === "opaque") cache.put(request, response.clone());
+  if (response.ok || (response.type === "opaque" && request.mode !== "cors")) cache.put(request, response.clone());
   return response;
 }
 
@@ -67,9 +70,10 @@ self.addEventListener("message", (event) => {
       try {
         const url = new URL(href);
         if (!isCacheable(url) || await cache.match(href)) return;
-        const crossOrigin = url.origin !== self.location.origin;
-        const response = await fetch(href, crossOrigin ? { mode: "no-cors" } : {});
-        if (response.ok || response.type === "opaque") await cache.put(href, response);
+        // The CDN and Google Fonts send CORS headers, so cache readable (non-opaque) copies
+        // that work for both script tags and module imports.
+        const response = await fetch(href, { mode: "cors", credentials: "omit" });
+        if (response.ok) await cache.put(href, response);
       } catch {
         // Best effort: anything missed is cached the next time it loads.
       }
