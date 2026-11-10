@@ -362,16 +362,21 @@ function createVectorPdfDocument(title) {
 
   function drawSectionHeading(text) {
     ensureSpace(58);
+    // Separate the heading from whatever came before it, except at the top of a page.
+    if (y > PDF_MARGIN + 1) y += 9;
+    const baseline = y;
     drawParagraph(text.toUpperCase(), {
       size: 9,
       style: "bold",
       color: PDF_COLORS.accent,
-      after: 5,
+      after: 0,
     });
+    // Rule sits just under the heading, with clear space before the content below it.
+    const ruleY = baseline + 5;
     pdf.setDrawColor(...PDF_COLORS.line);
     pdf.setLineWidth(0.65);
-    pdf.line(PDF_MARGIN, y - 2, PDF_PAGE_WIDTH - PDF_MARGIN, y - 2);
-    y += 5;
+    pdf.line(PDF_MARGIN, ruleY, PDF_PAGE_WIDTH - PDF_MARGIN, ruleY);
+    y = ruleY + 15;
   }
 
   function drawDetail(label, value) {
@@ -592,13 +597,6 @@ function drawContractPdf(state, scriptLogo, { forSignature = false, coordinatorS
   drawPdfBrandHeader(pdf, scriptLogo);
   layout.y = 146;
 
-  drawParagraph("COORDINATION AGREEMENT", {
-    font: "helvetica",
-    style: "bold",
-    size: 8,
-    color: PDF_COLORS.accent,
-    after: 4,
-  });
   drawParagraph("Wedding Coordination Services Agreement", {
     font: "times",
     style: "bold",
@@ -1535,7 +1533,6 @@ function renderSavedPreview(state, type, client) {
         <p>WEDDING PLANNING &amp; COORDINATION</p>
       </header>
       <div class="portal-contract-title">
-        <p>COORDINATION AGREEMENT</p>
         <h4>Wedding Coordination Services Agreement</h4>
       </div>
       <div class="portal-contract-details">
