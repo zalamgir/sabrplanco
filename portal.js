@@ -102,6 +102,10 @@ let inquiryFilter = "new";
 let convertingInquiryId = null;
 let inquiriesLoadError = "";
 let portalHasUnsavedEdits = false;
+// Contract e-signature requests per client: an array, or null when the feature isn't set up yet.
+const signatureRequests = new Map();
+const unlockedSignedContracts = new Set();
+const SIGNATURES_MIGRATION = "supabase/migrations/20261114010000_contract_signatures.sql";
 const PORTAL_PLACE_KEY = "sabrplanco-portal-place";
 const INQUIRIES_MIGRATION = "supabase/migrations/20261113010000_inquiries.sql";
 let clientFilter = "upcoming";
@@ -572,7 +576,7 @@ function drawItineraryPdf(state, client, scriptLogo) {
   return pdf;
 }
 
-function drawContractPdf(state, scriptLogo) {
+function drawContractPdf(state, scriptLogo, { forSignature = false } = {}) {
   const draft = state.savedDraft;
   const layout = createVectorPdfDocument("Sabr Plan Co. Wedding Coordination Agreement");
   const { pdf, drawParagraph, drawSectionHeading, drawDetail, drawBullet, addPageNumbers, ensureSpace } = layout;
@@ -654,23 +658,25 @@ function drawContractPdf(state, scriptLogo) {
   pdf.text("Signature of Coordinator", PDF_MARGIN + signatureWidth + signatureGap, signatureY + 13);
   if (details.coordinatorName) pdf.text(details.coordinatorName, PDF_MARGIN + signatureWidth + signatureGap, signatureY + 25);
   layout.y = signatureY + 35;
-  drawParagraph("DRAFT FOR REVIEW - NOT A SIGNED CONTRACT", {
-    x: PDF_MARGIN,
-    width: PDF_PAGE_WIDTH - PDF_MARGIN * 2,
-    size: 7,
-    color: PDF_COLORS.muted,
-    after: 0,
-  });
+  if (!forSignature) {
+    drawParagraph("DRAFT FOR REVIEW - NOT A SIGNED CONTRACT", {
+      x: PDF_MARGIN,
+      width: PDF_PAGE_WIDTH - PDF_MARGIN * 2,
+      size: 7,
+      color: PDF_COLORS.muted,
+      after: 0,
+    });
+  }
   addPageNumbers();
   return pdf;
 }
 
-async function createVectorPdf(type, state, client) {
+async function createVectorPdf(type, state, client, options = {}) {
   if (!state?.savedDraft) throw new Error("Save the document draft before exporting a PDF.");
   const scriptLogo = await loadScriptLogoImage();
   const pdf = type === "itinerary"
     ? drawItineraryPdf(state, client, scriptLogo)
-    : drawContractPdf(state, scriptLogo);
+    : drawContractPdf(state, scriptLogo, options);
   return pdf.output("blob");
 }
 
@@ -923,6 +929,12 @@ function refreshEmailHistory(clientId, type) {
 
 function renderDocumentModeButtons(type, state) {
   const hasSavedDocument = Boolean(state.uploadedDocument || state.savedDraft);
+  if (type === "contract" && isContractLocked(activeClientId)) {
+    return `
+    <div class="portal-mode-tabs" role="tablist" aria-label="Contract options">
+      <button type="button" class="portal-mode-tab is-active" data-mode="view" role="tab" aria-selected="true">View contract</button>
+    </div>`;
+  }
   return `
     <div class="portal-mode-tabs" role="tablist" aria-label="${type === "itinerary" ? "Itinerary" : "Contract"} options">
       ${hasSavedDocument ? `<button type="button" class="portal-mode-tab${state.mode === "view" ? " is-active" : ""}" data-mode="view" role="tab" aria-selected="${state.mode === "view"}">View ${type}</button>` : ""}
@@ -1158,7 +1170,7 @@ async function downloadGeneratedContract(button) {
   }
 }
 
-async function createEmailPdfAttachment(type, state, client, source) {
+async function createEmailPdfAttachment(type, state, client, source, options = {}) {
   if (source === "uploaded") {
     if (!state.uploadedDocument) throw new Error("The saved PDF is no longer available.");
     const { data, error } = await supabaseClient.storage
@@ -1176,7 +1188,7 @@ async function createEmailPdfAttachment(type, state, client, source) {
     .replace(/[^a-zA-Z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
   const label = type === "contract" ? "Coordination-Agreement" : "Wedding-Itinerary";
-  const blob = await createVectorPdf(type, state, client);
+  const blob = await createVectorPdf(type, state, client, options);
   if (blob.size > 15 * 1024 * 1024) throw new Error("The generated PDF is larger than the 15 MB email limit.");
   return { filename: `Sabr-Plan-Co-${safeName || "Wedding"}-${label}.pdf`, blob };
 }
@@ -1314,18 +1326,21 @@ function renderItinerary(client, state) {
 }
 
 function renderContract(client, state) {
+  if (isContractLocked(client.id) && state.mode !== "view") state.mode = "view";
   if (state.mode === "view" && state.viewSource === "pdf" && state.uploadedDocument) {
     return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> CONTRACT</p><h3>Uploaded contract</h3></div><span class="portal-draft-label">SAVED PDF</span></div>
       ${renderDocumentModeButtons("contract", state)}
+      ${renderSignaturePanel(client, state)}
       <div class="portal-itinerary-document">${renderPdfPreview(state)}</div>
       ${renderEmailForm(client, "contract", state)}`;
   }
   if (state.mode === "view" && state.viewSource === "draft" && state.savedDraft) {
     return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> CONTRACT</p><h3>Agreement draft</h3></div><span class="portal-draft-label">SAVED DRAFT</span></div>
       ${renderDocumentModeButtons("contract", state)}
+      ${renderSignaturePanel(client, state)}
       ${renderSavedPreview(state, "contract", client)}
       ${renderEmailForm(client, "contract", state)}
-      ${renderDraftDeleteButton("contract")}`;
+      ${isContractLocked(client.id) ? "" : renderDraftDeleteButton("contract")}`;
   }
   if (state.mode === "upload") {
     return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> CONTRACT</p><h3>Upload a contract</h3></div><span class="portal-draft-label">PDF PREVIEW</span></div>
@@ -1706,7 +1721,7 @@ function timePeriod(time) {
 
 async function loadClientWorkspace(clientId) {
   documents.delete(clientId);
-  const [draftResult, documentResult, historyResult] = await Promise.all([
+  const [draftResult, documentResult, historyResult, signatureResult] = await Promise.all([
     supabaseClient
       .from("document_drafts")
       .select("document_type, content")
@@ -1721,7 +1736,15 @@ async function loadClientWorkspace(clientId) {
       .eq("client_id", clientId)
       .order("sent_at", { ascending: false })
       .limit(50),
+    supabaseClient
+      .from("contract_signature_requests")
+      .select("id, status, recipient_emails, signed_path, signer_name, signature_method, expires_at, viewed_at, signed_at, voided_at, created_at")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
+  // Before the e-signature migration is applied the table is missing; the panel explains the setup.
+  signatureRequests.set(clientId, signatureResult.error ? null : signatureResult.data);
   // History is informational, so a failure here should not block the workspace.
   emailHistory.set(clientId, historyResult.error ? null : historyResult.data);
   if (draftResult.error) throw new Error(`Could not load document drafts: ${draftResult.error.message}`);
@@ -1823,6 +1846,8 @@ function clearPortalData() {
   });
   documents.clear();
   emailHistory.clear();
+  signatureRequests.clear();
+  unlockedSignedContracts.clear();
   clients.splice(0, clients.length);
   inquiries.splice(0, inquiries.length);
   renderInquiries();
@@ -2191,6 +2216,8 @@ document.querySelector("#delete-client-workspace").addEventListener("click", asy
   }
   documents.delete(clientId);
   emailHistory.delete(clientId);
+  signatureRequests.delete(clientId);
+  unlockedSignedContracts.delete(clientId);
   const clientIndex = clients.findIndex((item) => item.id === clientId);
   if (clientIndex >= 0) clients.splice(clientIndex, 1);
   const wasActiveWorkspace = activeClientId === clientId;
@@ -2246,7 +2273,7 @@ documentPanel.addEventListener("click", async (event) => {
   }
   const addRecipientButton = event.target.closest('[data-action="add-email-recipient"]');
   if (addRecipientButton) {
-    const form = addRecipientButton.closest("[data-email-form]");
+    const form = addRecipientButton.closest("[data-email-form], [data-signature-form]");
     addEmailRecipient(form, form.querySelector(".portal-form-status"));
     return;
   }
@@ -2563,7 +2590,7 @@ documentPanel.addEventListener("keydown", (event) => {
   const recipientInput = event.target.closest('[name="recipient-entry"]');
   if (!recipientInput || event.key !== "Enter") return;
   event.preventDefault();
-  addEmailRecipient(recipientInput.closest("[data-email-form]"), recipientInput.closest("form").querySelector(".portal-form-status"));
+  addEmailRecipient(recipientInput.closest("[data-email-form], [data-signature-form]"), recipientInput.closest("form").querySelector(".portal-form-status"));
 });
 
 documentPanel.addEventListener("submit", async (event) => {
@@ -3603,4 +3630,234 @@ document.addEventListener("touchend", () => {
 
 document.addEventListener("touchcancel", () => {
   if (pullStartY !== null) resetPull();
+});
+
+// Contract e-signature ----------------------------------------------------------
+
+function latestSignatureRequest(clientId) {
+  const requests = signatureRequests.get(clientId);
+  return Array.isArray(requests) ? requests[0] || null : null;
+}
+
+function signedSignatureRequest(clientId) {
+  const requests = signatureRequests.get(clientId);
+  return Array.isArray(requests) ? requests.find((item) => item.status === "signed") || null : null;
+}
+
+function isOpenSignatureRequest(request) {
+  return Boolean(request) && (request.status === "sent" || request.status === "viewed")
+    && new Date(request.expires_at).getTime() > Date.now();
+}
+
+// A signed contract is locked so the signed version isn't accidentally edited, until the
+// coordinator chooses to start a new version.
+function isContractLocked(clientId) {
+  return Boolean(clientId) && latestSignatureRequest(clientId)?.status === "signed" && !unlockedSignedContracts.has(clientId);
+}
+
+function formatShortDateTime(value) {
+  return value ? formatSentAt(value) : "";
+}
+
+function renderSignaturePanel(client, state) {
+  const requests = signatureRequests.get(client.id);
+  if (requests === null) {
+    return `<section class="portal-signature-panel"><p class="eyebrow"><span class="eyebrow-line"></span> E-SIGNATURE</p>
+      <p class="portal-muted">Contract e-signing needs a one-time setup: run ${SIGNATURES_MIGRATION} in the Supabase SQL Editor and deploy the contract-signing function. See the README.</p></section>`;
+  }
+  if (requests === undefined) return "";
+  const latest = requests[0];
+  const signed = signedSignatureRequest(client.id);
+  const canSend = Boolean(state.savedDraft || state.uploadedDocument);
+  const sendForm = canSend ? renderSignatureSendForm(client, state, isOpenSignatureRequest(latest)) : "";
+
+  if (latest?.status === "signed" && !unlockedSignedContracts.has(client.id)) {
+    return `<section class="portal-signature-panel is-signed">
+      <p class="eyebrow"><span class="eyebrow-line"></span> E-SIGNATURE</p>
+      <h4>Signed by ${escapeHtml(latest.signer_name)}</h4>
+      <p class="portal-muted">${escapeHtml(formatShortDateTime(latest.signed_at))} · ${latest.signature_method === "drawn" ? "Drawn signature" : "Typed signature"} · Sent to ${escapeHtml(latest.recipient_emails.join(", "))}</p>
+      <div class="portal-signature-actions">
+        <button type="button" class="button button-dark portal-inquiry-convert" data-signature-action="download" data-request-id="${escapeHtml(latest.id)}">Download signed contract</button>
+        <button type="button" class="button portal-edit-client" data-signature-action="unlock">Start a new version</button>
+      </div>
+      <p class="portal-muted portal-signature-note">This contract is locked because it has been signed. Starting a new version lets you edit and send it again; the signed copy is kept.</p>
+    </section>`;
+  }
+
+  if (isOpenSignatureRequest(latest)) {
+    return `<section class="portal-signature-panel is-pending">
+      <p class="eyebrow"><span class="eyebrow-line"></span> E-SIGNATURE</p>
+      <h4>Waiting for signature</h4>
+      <p class="portal-muted">Sent to ${escapeHtml(latest.recipient_emails.join(", "))} on ${escapeHtml(formatShortDateTime(latest.created_at))}.
+        ${latest.viewed_at ? `Opened ${escapeHtml(formatShortDateTime(latest.viewed_at))}.` : "Not opened yet."}
+        Link expires ${escapeHtml(formatDate(latest.expires_at.slice(0, 10)))}.</p>
+      <div class="portal-signature-actions">
+        <button type="button" class="button portal-delete-client" data-signature-action="void" data-request-id="${escapeHtml(latest.id)}">Cancel request</button>
+      </div>
+      ${sendForm}
+    </section>`;
+  }
+
+  const lastNote = latest?.status === "voided"
+    ? `<p class="portal-muted">The last request was cancelled ${escapeHtml(formatShortDateTime(latest.voided_at))}.</p>`
+    : latest && latest.status !== "signed"
+      ? `<p class="portal-muted">The last signing link expired ${escapeHtml(formatDate(latest.expires_at.slice(0, 10)))} without being signed.</p>`
+      : "";
+  const signedNote = signed && unlockedSignedContracts.has(client.id)
+    ? `<p class="portal-muted">The previous version was signed by ${escapeHtml(signed.signer_name)} on ${escapeHtml(formatShortDateTime(signed.signed_at))}. <button type="button" class="portal-text-button" data-signature-action="download" data-request-id="${escapeHtml(signed.id)}">Download it</button></p>`
+    : "";
+  return `<section class="portal-signature-panel">
+    <p class="eyebrow"><span class="eyebrow-line"></span> E-SIGNATURE</p>
+    ${signedNote}${lastNote}
+    ${sendForm || '<p class="portal-muted">Save the contract to send it for signature.</p>'}
+  </section>`;
+}
+
+function renderSignatureSendForm(client, state, isResend) {
+  const usesUploadedPdf = state.viewSource === "pdf" && Boolean(state.uploadedDocument);
+  const recipients = defaultClientRecipients(client);
+  const subject = "Please review and sign your wedding coordination contract";
+  const message = `Hello,\n\nYour wedding coordination contract with Sabr Plan Co. is ready. Please review it and sign online using the secure link below.\n\nLet us know if you have any questions.`;
+  return `<details class="portal-email-panel portal-signature-send"${isResend ? "" : " open"}>
+    <summary>${isResend ? "Send a new signing link" : "Send for signature"}</summary>
+    <form class="portal-email-form" data-signature-form data-signature-source="${usesUploadedPdf ? "uploaded" : "generated"}" data-client-id="${escapeHtml(client.id)}">
+      <div class="portal-email-recipient-field">
+        <label for="signature-recipient-entry" data-recipient-label>Send to</label>
+        <div class="portal-email-recipient-entry">
+          <div class="portal-email-recipient-list" data-recipient-list>${recipients.map(renderEmailRecipient).join("")}</div>
+          <div class="portal-email-recipient-controls">
+            <input id="signature-recipient-entry" name="recipient-entry" type="email" autocomplete="email" placeholder="Enter one email address" />
+            <button type="button" class="button portal-email-add-recipient" data-action="add-email-recipient">Add email</button>
+          </div>
+          <span class="portal-email-recipient-help">The partner who opens the link signs for both of you. Up to five addresses.</span>
+        </div>
+      </div>
+      <label>Subject<input name="subject" type="text" maxlength="200" required value="${escapeHtml(subject)}" /></label>
+      <label>Message
+        <textarea name="message" rows="5" maxlength="5000">${escapeHtml(message)}</textarea>
+        <span class="portal-email-recipient-help">The signing link and its expiry date are added automatically.</span>
+      </label>
+      <label class="portal-email-confirm"><input name="confirm-ready" type="checkbox" required /><span>I've reviewed this ${usesUploadedPdf ? "uploaded PDF" : "contract"} and it's ready to be signed.${isResend ? " The current link will stop working." : ""}</span></label>
+      <div class="portal-form-actions">
+        <span class="portal-form-status" role="status" aria-live="polite"></span>
+        <button type="submit" class="button button-dark">${isResend ? "Send new link" : "Send for signature"}</button>
+      </div>
+    </form>
+  </details>`;
+}
+
+async function invokeSigningFunction(body) {
+  const { data, error } = await supabaseClient.functions.invoke("contract-signing", { body });
+  if (error) {
+    const responseBody = error.context instanceof Response
+      ? await error.context.clone().json().catch(() => null)
+      : null;
+    throw new Error(data?.error || responseBody?.error || error.message);
+  }
+  return data;
+}
+
+documentPanel.addEventListener("submit", async (event) => {
+  const form = event.target.closest("[data-signature-form]");
+  if (!form) return;
+  event.preventDefault();
+  const status = form.querySelector(".portal-form-status");
+  const recipientInput = form.elements.namedItem("recipient-entry");
+  // Include an address that was typed but not added with the button.
+  if (recipientInput.value.trim() && !addEmailRecipient(form, status)) return;
+  const recipients = [...form.querySelectorAll("[data-email-recipient]")].map((item) => item.dataset.emailRecipient);
+  if (!form.reportValidity()) return;
+  if (!recipients.length) {
+    status.textContent = "Add at least one email address.";
+    recipientInput.focus();
+    return;
+  }
+  const client = clients.find((item) => item.id === form.dataset.clientId);
+  if (!client) return;
+  if (!window.confirm(`Send the contract to ${recipients.join(", ")} for signature?`)) return;
+
+  const submitButton = form.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  status.textContent = "Preparing the contract and sending the signing link…";
+  try {
+    const state = getDocumentState(client.id, "contract");
+    const { blob } = await createEmailPdfAttachment("contract", state, client, form.dataset.signatureSource, { forSignature: true });
+    if (blob.size > 15 * 1024 * 1024) throw new Error("The contract PDF is larger than 15 MB.");
+    const subject = form.elements.namedItem("subject").value.trim();
+    const data = await invokeSigningFunction({
+      action: "create",
+      clientId: client.id,
+      recipients,
+      subject,
+      message: form.elements.namedItem("message").value.trim(),
+      pdfBase64: await blobToBase64(blob),
+    });
+    const requests = signatureRequests.get(client.id) || [];
+    requests.forEach((item) => {
+      if (item.status === "sent" || item.status === "viewed") item.status = "voided";
+    });
+    requests.unshift(data.request);
+    signatureRequests.set(client.id, requests);
+    unlockedSignedContracts.delete(client.id);
+    const history = emailHistory.get(client.id);
+    if (Array.isArray(history)) {
+      history.unshift({ document_type: "contract", recipient_emails: recipients, subject, sent_at: new Date().toISOString() });
+    }
+    if (activeClientId === client.id && activeDocument === "contract") renderDocument();
+    setPortalNotice(`The signing link was emailed to ${recipients.join(", ")}.`);
+  } catch (error) {
+    status.textContent = `The contract could not be sent for signature: ${error.message || "Unknown error"}`;
+    setPortalNotice(status.textContent, true);
+    submitButton.disabled = false;
+  }
+});
+
+documentPanel.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-signature-action]");
+  if (!button) return;
+  const clientId = activeClientId;
+  const requests = signatureRequests.get(clientId) || [];
+  const action = button.dataset.signatureAction;
+  if (action === "unlock") {
+    if (!window.confirm("Start a new version of this contract? You'll be able to edit it and send it for signature again. The signed copy is kept.")) return;
+    unlockedSignedContracts.add(clientId);
+    renderDocument();
+    return;
+  }
+  const request = requests.find((item) => item.id === button.dataset.requestId);
+  if (!request) return;
+  if (action === "download") {
+    button.disabled = true;
+    try {
+      const { data, error } = await supabaseClient.storage.from("portal-documents").download(request.signed_path);
+      if (error) throw new Error(error.message);
+      const client = clients.find((item) => item.id === clientId);
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = safePdfFilename(`${client?.name || "Client"} Signed Contract`, "Signed-Contract");
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      setPortalNotice(`The signed contract could not be downloaded: ${error.message || "Unknown error"}`, true);
+    } finally {
+      button.disabled = false;
+    }
+    return;
+  }
+  if (action === "void") {
+    if (!window.confirm("Cancel this signature request? The signing link will stop working.")) return;
+    button.disabled = true;
+    try {
+      const data = await invokeSigningFunction({ action: "void", requestId: request.id });
+      Object.assign(request, data.request);
+      renderDocument();
+      setPortalNotice("The signature request was cancelled.");
+    } catch (error) {
+      button.disabled = false;
+      setPortalNotice(`The request could not be cancelled: ${error.message || "Unknown error"}`, true);
+    }
+  }
 });

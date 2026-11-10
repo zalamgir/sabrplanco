@@ -5039,3 +5039,258 @@ body:has(.portal-app[data-theme="dark"]) .portal-pull-indicator {
 .portal-settings-body > .portal-settings-note {
   margin: 0 0 1.2rem;
 }
+
+/* Public contract signing page */
+.sign-body {
+  min-height: 100vh;
+  background: var(--paper);
+}
+
+.sign-header {
+  display: flex;
+  justify-content: center;
+  padding: 1.6rem 1rem 0.6rem;
+}
+
+.sign-main {
+  width: min(100% - 2rem, 760px);
+  margin: 0 auto;
+  padding: 1.5rem 0 4rem;
+}
+
+.sign-state h1 {
+  margin: 0.7rem 0 0.8rem;
+  color: var(--espresso);
+  font: 400 clamp(2rem, 6vw, 2.8rem) / 1.1 var(--serif);
+}
+
+.sign-state h1 em,
+.sign-form h2 em {
+  color: var(--rust);
+}
+
+.sign-lead {
+  margin: 0 0 1.4rem;
+  color: var(--ink);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+
+.sign-muted {
+  margin: 1.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.sign-muted a,
+.sign-open-pdf {
+  color: var(--rust);
+}
+
+.sign-document {
+  display: grid;
+  gap: 0.8rem;
+  margin-bottom: 2rem;
+}
+
+.sign-page {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(59, 38, 27, 0.08);
+}
+
+.sign-open-pdf {
+  justify-self: start;
+  font-size: 0.7rem;
+}
+
+.sign-form {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid var(--line);
+  padding: clamp(1.1rem, 4vw, 1.8rem);
+  background: #fffcf7;
+}
+
+.sign-form h2 {
+  margin: 0;
+  color: var(--espresso);
+  font: 400 1.6rem var(--serif);
+}
+
+.sign-field {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.sign-field input {
+  width: 100%;
+  border: 1px solid #ded5c9;
+  border-radius: 0;
+  padding: 0.75rem;
+  background: #fffefa;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.sign-field input:focus {
+  border-color: var(--rust);
+  outline: 2px solid rgba(150, 106, 77, 0.2);
+}
+
+.sign-method {
+  display: flex;
+  gap: 1.2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.sign-method-option {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+}
+
+.sign-method-option.is-active {
+  border-color: var(--rust);
+  color: var(--espresso);
+}
+
+.sign-pad {
+  position: relative;
+}
+
+#signature-canvas {
+  width: 100%;
+  height: 150px;
+  display: block;
+  border: 1px dashed #c5aa8b;
+  background: #fffefa;
+}
+
+#signature-canvas.is-drawing {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.sign-pad-hint {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 1rem;
+  color: var(--muted);
+  font-size: 0.66rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+.sign-clear {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  border: 1px solid var(--line);
+  padding: 0.3rem 0.6rem;
+  background: #fffcf7;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.6rem;
+}
+
+.sign-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  color: var(--ink);
+  font-size: 0.68rem;
+  line-height: 1.55;
+}
+
+.sign-check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 1.1rem;
+  margin-top: 0.1rem;
+  accent-color: var(--rust);
+}
+
+.sign-status {
+  min-height: 1em;
+  margin: 0;
+  color: #8b4539;
+  font-size: 0.68rem;
+}
+
+.sign-submit {
+  justify-self: start;
+}
+
+/* Contract e-signature panel in the portal */
+.portal-signature-panel {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 1.2rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--rust);
+  padding: 1rem 1.1rem;
+  background: #fffcf7;
+}
+
+.portal-signature-panel h4 {
+  margin: 0;
+  color: var(--espresso);
+  font: 500 1.15rem var(--serif);
+}
+
+.portal-signature-panel .portal-muted {
+  margin: 0;
+}
+
+.portal-signature-panel.is-signed {
+  border-left-color: #5f7a4f;
+}
+
+.portal-signature-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.portal-signature-note {
+  font-size: 0.6rem;
+}
+
+.portal-signature-send {
+  margin-top: 0.4rem;
+}
+
+.portal-app[data-theme="dark"] .portal-signature-panel {
+  border-color: #40362d;
+  border-left-color: #dfbd98;
+  background: #29231d;
+}
+
+.portal-app[data-theme="dark"] .portal-signature-panel.is-signed {
+  border-left-color: #9fbf8a;
+}
+
+.portal-app[data-theme="dark"] .portal-signature-panel h4 {
+  color: #f3ece3;
+}
+
+.sign-body [hidden] {
+  display: none !important;
+}

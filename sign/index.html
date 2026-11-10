@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#f6f1e8" />
+    <title>Sign your contract | Sabr Plan Co.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css?v=20261110o" />
+    <script src="../portal-config.js?v=20261110o" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js" defer></script>
+    <script src="sign.js?v=20261110o" defer></script>
+  </head>
+  <body class="sign-body">
+    <header class="sign-header">
+      <a class="wordmark" href="../index.html" aria-label="Sabr Plan Co. home">
+        <img class="brand-script" src="../assets/sabr-script.png" alt="" aria-hidden="true" />
+        <span class="brand-subtitle"><span></span>PLAN CO.<span></span></span>
+      </a>
+    </header>
+    <main class="sign-main" id="main">
+      <section class="sign-state" id="sign-loading" aria-live="polite">
+        <p class="eyebrow"><span class="eyebrow-line"></span> CONTRACT</p>
+        <h1>Loading your contract…</h1>
+      </section>
+
+      <section class="sign-state" id="sign-error" hidden>
+        <p class="eyebrow"><span class="eyebrow-line"></span> CONTRACT</p>
+        <h1>This link can't be used</h1>
+        <p class="sign-lead" id="sign-error-message"></p>
+        <p class="sign-muted">Questions? Email <a href="mailto:sabrplanco@gmail.com">sabrplanco@gmail.com</a>.</p>
+      </section>
+
+      <section class="sign-state" id="sign-ready" hidden>
+        <p class="eyebrow"><span class="eyebrow-line"></span> FOR YOUR SIGNATURE</p>
+        <h1>Review and sign your <em>contract.</em></h1>
+        <p class="sign-lead">Wedding coordination agreement for <strong id="sign-client-name"></strong>. Please read it through, then sign at the bottom of this page.</p>
+        <div class="sign-document" id="sign-document" aria-label="Contract pages"></div>
+
+        <form class="sign-form" id="sign-form" novalidate>
+          <p class="eyebrow"><span class="eyebrow-line"></span> SIGN</p>
+          <h2>Your signature</h2>
+          <label class="sign-field">
+            Full legal name
+            <input id="signer-name" name="signer-name" type="text" autocomplete="name" maxlength="200" required />
+          </label>
+          <div class="sign-method" role="group" aria-label="How would you like to sign?">
+            <button type="button" class="sign-method-option is-active" data-sign-method="typed" aria-pressed="true">Use my typed name</button>
+            <button type="button" class="sign-method-option" data-sign-method="drawn" aria-pressed="false">Draw my signature</button>
+          </div>
+          <div class="sign-pad">
+            <canvas id="signature-canvas" aria-label="Signature preview"></canvas>
+            <p class="sign-pad-hint" id="signature-hint">Type your name above to create your signature.</p>
+            <button type="button" class="sign-clear" id="signature-clear" hidden>Clear</button>
+          </div>
+          <label class="sign-check">
+            <input type="checkbox" id="agree-terms" />
+            <span>I have read the contract above and agree to its terms.</span>
+          </label>
+          <label class="sign-check">
+            <input type="checkbox" id="agree-electronic" />
+            <span>I agree to sign electronically, and that my electronic signature is the legal equivalent of my handwritten signature.</span>
+          </label>
+          <p class="sign-status" id="sign-status" role="status" aria-live="polite"></p>
+          <button type="submit" class="button button-dark sign-submit" id="sign-submit">Sign contract</button>
+        </form>
+      </section>
+
+      <section class="sign-state" id="sign-done" hidden>
+        <p class="eyebrow"><span class="eyebrow-line"></span> ALL SET</p>
+        <h1>Thank you, <em id="sign-done-name"></em></h1>
+        <p class="sign-lead" id="sign-done-message"></p>
+        <a class="button button-dark" id="sign-download" href="#" target="_blank" rel="noopener">Download signed contract</a>
+        <p class="sign-muted">Questions? Email <a href="mailto:sabrplanco@gmail.com">sabrplanco@gmail.com</a>.</p>
+      </section>
+    </main>
+  </body>
+</html>

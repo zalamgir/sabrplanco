@@ -11,6 +11,7 @@ A responsive static website for wedding coordination and planning in New Jersey,
 - `faqs.html` — Frequently asked questions
 - `inquiry.html` — Web3Forms inquiry form and direct contact details
 - `portal/` — Admin-only coordinator portal at `/portal/` (`portal.html` redirects there)
+- `sign/` — Private contract signing page opened from the emailed signing link
 
 The shared visual styles live in `styles.css`, `script.js` provides public-site interactions, and `portal.js` runs the coordinator portal. This site uses plain HTML, CSS, and JavaScript; no build step or package installation is needed.
 
@@ -37,6 +38,21 @@ Client workspaces can store optional email addresses (added one at a time with *
 ## Website inquiries in the portal
 
 Inquiries sent from `inquiry.html` are still emailed through Web3Forms, and are also saved to the `inquiries` table so they appear on the portal's **Inquiries** page. The form now includes optional wedding date and venue fields. In the portal, each inquiry can be converted to a client (the add-client form opens with the name, email, service, date, venue, and message filled in), archived, or deleted. Apply `supabase/migrations/20261113010000_inquiries.sql` once in the Supabase SQL Editor. The website can only add inquiries; reading, changing, and deleting them is limited to portal admins. If either the email or the database save succeeds, the visitor sees the confirmation message.
+
+## Contract e-signature
+
+From a saved contract (generated or uploaded PDF), **Send for signature** emails the couple a private link to `/sign/`. They review the contract, type their full legal name, choose an auto-generated signature from their typed name or draw one, and agree to sign electronically. The signed PDF (the exact PDF that was sent, stamped on every page, plus a signature certificate with an audit trail and document fingerprint) is saved to private storage, emailed to the couple with a copy to `sabrplanco@gmail.com`, and shown in the client's workspace. Signed contracts are locked until **Start a new version** is chosen. Links expire after 30 days, stop working once signed or cancelled, and only a hash of each link token is stored. Have an attorney review the contract wording and this signing process before relying on it.
+
+Setup (once):
+
+1. Apply `supabase/migrations/20261114010000_contract_signatures.sql` in the Supabase SQL Editor.
+2. From a computer with the Supabase CLI linked to the project, deploy the function. It must be deployed without gateway JWT verification because the public signing page has no login; the function checks the admin session or signing token itself:
+
+   ```sh
+   supabase functions deploy contract-signing --no-verify-jwt
+   ```
+
+3. It uses the existing `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `PORTAL_ALLOWED_ORIGINS` secrets, plus the `SUPABASE_SERVICE_ROLE_KEY` that Supabase provides to Edge Functions automatically.
 
 ## Contract details settings
 
