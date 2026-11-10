@@ -292,10 +292,15 @@
               <input name="venue" type="text" placeholder="Venue name or city" />
             </label>
             <fieldset class="portal-dialog-details" id="client-detail-fields">
-              <label>
-                Email <span class="portal-optional">(optional, separate two with a comma)</span>
-                <input name="email" type="email" multiple maxlength="320" autocomplete="off" placeholder="alex@example.com, jamie@example.com" />
-              </label>
+              <div class="portal-dialog-field">
+                <label for="client-email-entry">Email <span class="portal-optional">(optional)</span></label>
+                <div class="portal-email-recipient-list portal-client-email-list" id="client-email-list"></div>
+                <div class="portal-email-recipient-controls">
+                  <input id="client-email-entry" name="email-entry" type="email" maxlength="254" autocomplete="off" placeholder="name@example.com" />
+                  <button type="button" class="button portal-email-add-recipient" id="add-client-email">Add email</button>
+                </div>
+                <span class="portal-email-recipient-help">Add one address at a time. To add a partner's email, enter it and choose Add email again.</span>
+              </div>
               <label>
                 Phone <span class="portal-optional">(optional)</span>
                 <input name="phone" type="tel" maxlength="40" autocomplete="off" placeholder="(555) 123-4567" />

@@ -4411,3 +4411,13 @@ h2 em,
     margin-bottom: 0;
   }
 }
+
+.portal-dialog-field {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.portal-client-email-list:empty {
+  display: none;
+}

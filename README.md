@@ -30,7 +30,7 @@ The portal's browser-safe Supabase connection settings belong in `portal-config.
 
 ## Client contact details
 
-Client workspaces can store an optional email (two addresses separated by a comma for couples), phone, guest count, and notes, and existing clients can be edited from their workspace with **Edit details**. Apply `supabase/migrations/20261111010000_client_contact_details.sql` once in the Supabase SQL Editor to add these columns. Until it is applied, the portal keeps working without the extra fields and shows a reminder after sign-in. A client's saved email fills in automatically when sending their contract or itinerary.
+Client workspaces can store optional email addresses (added one at a time with **Add email**, up to five), phone, guest count, and notes, and existing clients can be edited from their workspace with **Edit details**. Apply `supabase/migrations/20261111010000_client_contact_details.sql` once in the Supabase SQL Editor to add these columns. Until it is applied, the portal keeps working without the extra fields and shows a reminder after sign-in. A client's saved email and phone fill in automatically on a new contract, and their email fills in when sending a contract or itinerary.
 
 ## Client document email setup
 

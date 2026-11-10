@@ -1300,8 +1300,8 @@ function renderContract(client, state) {
     <form class="portal-template-form" data-template-form="contract">
       <div class="portal-form-grid">
         <label>Client Name<input name="client-name" type="text" value="${escapeHtml(state.savedDraft?.clientName || state.savedDraft?.name || client.name)}" required /></label>
-        <label>Client Contact Number<input name="client-contact" type="tel" value="${escapeHtml(state.savedDraft?.clientContact || "")}" placeholder="Include area or country code" required /></label>
-        <label>Client Email<input name="client-email" type="text" inputmode="email" value="${escapeHtml(state.savedDraft?.clientEmail || "")}" placeholder="Email addresses for the couple" required /></label>
+        <label>Client Contact Number<input name="client-contact" type="tel" value="${escapeHtml(state.savedDraft?.clientContact || client.phone || "")}" placeholder="Include area or country code" required /></label>
+        <label>Client Email<input name="client-email" type="text" inputmode="email" value="${escapeHtml(state.savedDraft?.clientEmail || client.email || "")}" placeholder="Email addresses for the couple" required /></label>
         <label>Event Dates<input name="event-dates" type="text" value="${escapeHtml(state.savedDraft?.eventDates || (state.savedDraft?.date ? `Wedding Day | ${formatDate(state.savedDraft.date)}` : `Wedding Day | ${formatDate(client.date)}`))}" required /></label>
         <label>Event Location<input name="event-location" type="text" value="${escapeHtml(state.savedDraft?.eventLocation || state.savedDraft?.venue || client.venue || "")}" required /></label>
         <label>Total Fee for Services (USD)<input name="total-fee" type="number" min="0.01" step="0.01" value="${escapeHtml(state.savedDraft?.totalFee ?? "")}" placeholder="0.00" required /></label>
@@ -2831,9 +2831,60 @@ documentPanel.addEventListener("submit", async (event) => {
   setPortalNotice("The document draft was saved to Supabase.");
 });
 
+const MAX_CLIENT_EMAILS = 5;
+const clientEmailList = document.querySelector("#client-email-list");
+const clientEmailEntry = document.querySelector("#client-email-entry");
+
+function getClientEmails() {
+  return [...clientEmailList.querySelectorAll("[data-email-recipient]")].map((item) => item.dataset.emailRecipient);
+}
+
+function setClientEmails(emails) {
+  clientEmailList.innerHTML = emails.map(renderEmailRecipient).join("");
+}
+
+// Moves the typed address into the list. Returns false (with a message) if it can't be added.
+function addClientEmail() {
+  const email = clientEmailEntry.value.trim();
+  if (!email) return true;
+  const emails = getClientEmails();
+  if (!clientEmailEntry.checkValidity()) {
+    clientStatus.textContent = "Enter a valid email address, like name@example.com.";
+  } else if (emails.some((item) => item.toLowerCase() === email.toLowerCase())) {
+    clientStatus.textContent = "That email address is already added.";
+  } else if (emails.length >= MAX_CLIENT_EMAILS) {
+    clientStatus.textContent = `You can add up to ${MAX_CLIENT_EMAILS} email addresses.`;
+  } else {
+    clientEmailList.insertAdjacentHTML("beforeend", renderEmailRecipient(email));
+    clientEmailEntry.value = "";
+    clientStatus.textContent = "";
+    return true;
+  }
+  clientEmailEntry.focus();
+  return false;
+}
+
+document.querySelector("#add-client-email").addEventListener("click", () => {
+  if (addClientEmail()) clientEmailEntry.focus();
+});
+
+clientEmailEntry.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  addClientEmail();
+});
+
+clientEmailList.addEventListener("click", (event) => {
+  const removeButton = event.target.closest('[data-action="remove-email-recipient"]');
+  if (!removeButton) return;
+  removeButton.closest("[data-email-recipient]").remove();
+  clientEmailEntry.focus();
+});
+
 function openClientDialog(client = null) {
   editingClientId = client?.id || null;
   clientForm.reset();
+  setClientEmails(parseEmailRecipients(client?.email || ""));
   clientStatus.textContent = "";
   document.querySelector("#client-dialog-eyebrow").textContent = client ? "CLIENT DETAILS" : "NEW WORKSPACE";
   document.querySelector("#client-dialog-title").textContent = client ? "Edit client details" : "Add a client";
@@ -2845,7 +2896,6 @@ function openClientDialog(client = null) {
     fields.namedItem("date").value = client.date;
     fields.namedItem("service").value = client.serviceValue;
     fields.namedItem("venue").value = client.venue;
-    fields.namedItem("email").value = client.email;
     fields.namedItem("phone").value = client.phone;
     fields.namedItem("guest-count").value = client.guestCount ?? "";
     fields.namedItem("notes").value = client.notes;
@@ -2863,7 +2913,7 @@ function clientPayloadFromForm(formData) {
   };
   if (clientDetailsAvailable) {
     const guestCount = formData.get("guest-count").toString().trim();
-    payload.email = parseEmailRecipients(formData.get("email").toString()).join(", ") || null;
+    payload.email = getClientEmails().join(", ") || null;
     payload.phone = formData.get("phone").toString().trim() || null;
     payload.guest_count = guestCount ? Number(guestCount) : null;
     payload.notes = formData.get("notes").toString().trim() || null;
@@ -2893,6 +2943,8 @@ clientForm.addEventListener("submit", async (event) => {
   const clientId = editingClientId;
   clientStatus.classList.remove("is-success");
   clientStatus.textContent = "";
+  // Save an address that was typed but not added with the button.
+  if (clientDetailsAvailable && !addClientEmail()) return;
   clientSubmitButton.disabled = true;
   clientSubmitButton.textContent = clientId ? "Saving…" : "Creating…";
   if (clientId) {
