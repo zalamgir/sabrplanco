@@ -18,6 +18,8 @@ The shared visual styles live in `styles.css`, `script.js` provides public-site 
 
 The portal is installable as a Progressive Web App (PWA). On iPhone, open `https://sabrplanco.com/portal/` in Safari, tap **Share**, then **Add to Home Screen**. On supported desktop or Android browsers, use the browser's install-app option. The app opens directly to the portal and continues to require Supabase sign-in.
 
+When opened from the Home Screen, pull down from the top of the portal to refresh it; it reloads the latest data and portal updates and reopens the same page. If a form has unsaved changes, it asks before refreshing.
+
 The portal service worker is scoped to `/portal/` and uses network-only requests. It does not cache client records, PDFs, authentication responses, or other portal data; an internet connection is required.
 
 ## Coordinator portal security setup

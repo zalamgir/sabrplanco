@@ -101,6 +101,8 @@ let inquiriesAvailable = true;
 let inquiryFilter = "new";
 let convertingInquiryId = null;
 let inquiriesLoadError = "";
+let portalHasUnsavedEdits = false;
+const PORTAL_PLACE_KEY = "sabrplanco-portal-place";
 const INQUIRIES_MIGRATION = "supabase/migrations/20261113010000_inquiries.sql";
 let clientFilter = "upcoming";
 let clientSearch = "";
@@ -713,6 +715,7 @@ async function loadPortalData() {
 
 function showView(view) {
   activeView = view;
+  portalHasUnsavedEdits = false;
   document.querySelectorAll(".portal-view").forEach((section) => {
     const visible = section.id === `${view}-view`;
     section.hidden = !visible;
@@ -868,6 +871,7 @@ function renderClients() {
 }
 
 function renderDocument(clientId = activeClientId) {
+  portalHasUnsavedEdits = false;
   const client = clients.find((item) => item.id === clientId);
   if (!client) return;
   const state = getDocumentState(client.id, activeDocument);
@@ -1869,6 +1873,7 @@ async function authorizePortalUser(user) {
       true,
     );
   }
+  await restorePortalPlace();
 }
 
 signInForm.addEventListener("submit", async (event) => {
@@ -3300,6 +3305,7 @@ document.querySelector("#contract-settings-form").addEventListener("submit", asy
       .upsert({ id: 1, contract: values });
     if (error) throw new Error(`Contract details could not be saved: ${error.message}`);
     contractSettings = values;
+    portalHasUnsavedEdits = false;
     status.textContent = "Saved. New contracts will use these details.";
     setPortalNotice("Contract details saved. Contracts you save from now on will use them.");
   } catch (error) {
@@ -3461,4 +3467,136 @@ document.querySelector("#inquiry-list").addEventListener("click", async (event) 
     button.disabled = false;
     setPortalNotice(`The inquiry could not be updated: ${error.message || "Unknown error"}`, true);
   }
+});
+
+// Pull to refresh -------------------------------------------------------------
+// Home Screen (standalone) apps on iPhone have no browser refresh, so the portal
+// provides its own. It reloads the page (picking up new data and portal updates)
+// and reopens the same view afterwards.
+
+const PULL_REFRESH_THRESHOLD = 70;
+const PULL_REFRESH_MAX = 110;
+// iPhone's bounce at the top of a page can leave it a few pixels from 0, so allow a little leeway.
+const PULL_TOP_TOLERANCE = 6;
+const pullIndicator = document.querySelector("#portal-pull-indicator");
+let pullStartY = null;
+let pullDistance = 0;
+let pullRefreshing = false;
+
+function isStandaloneApp() {
+  return window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+// Any typing in a portal form counts as unsaved until the form is saved or re-rendered.
+portalApp.addEventListener("input", (event) => {
+  if (event.target.closest("form")) portalHasUnsavedEdits = true;
+});
+
+function savePortalPlace() {
+  try {
+    sessionStorage.setItem(PORTAL_PLACE_KEY, JSON.stringify({
+      view: activeView,
+      clientId: activeClientId,
+      documentType: activeDocument,
+      inquiryFilter,
+    }));
+  } catch {
+    // Storage can be unavailable (private mode); the refresh still works, it just opens the calendar.
+  }
+}
+
+async function restorePortalPlace() {
+  let place = null;
+  try {
+    place = JSON.parse(sessionStorage.getItem(PORTAL_PLACE_KEY) || "null");
+    sessionStorage.removeItem(PORTAL_PLACE_KEY);
+  } catch {
+    return;
+  }
+  if (!place || typeof place !== "object") return;
+  if (place.inquiryFilter === "new" || place.inquiryFilter === "done") {
+    inquiryFilter = place.inquiryFilter;
+    renderInquiries();
+  }
+  if (place.view === "workspace" && clients.some((client) => client.id === place.clientId)) {
+    await openWorkspace(place.clientId);
+    if (place.documentType === "itinerary" && activeClientId === place.clientId) {
+      activeDocument = "itinerary";
+      renderDocument();
+    }
+  } else if (["calendar", "clients", "inquiries", "settings"].includes(place.view)) {
+    showView(place.view === "clients" && !clients.length ? "empty" : place.view);
+  }
+}
+
+function setPullIndicator(distance, state = "") {
+  const progress = Math.min(distance / PULL_REFRESH_THRESHOLD, 1);
+  pullIndicator.style.setProperty("--pull-offset", `${distance}px`);
+  pullIndicator.style.setProperty("--pull-rotate", `${Math.round(progress * 270)}deg`);
+  pullIndicator.style.setProperty("--pull-opacity", String(Math.min(progress * 1.2, 1)));
+  pullIndicator.classList.toggle("is-ready", state === "ready");
+  pullIndicator.classList.toggle("is-refreshing", state === "refreshing");
+  pullIndicator.classList.toggle("is-visible", distance > 0 || state === "refreshing");
+}
+
+function resetPull() {
+  pullStartY = null;
+  pullDistance = 0;
+  pullIndicator.classList.add("is-settling");
+  setPullIndicator(0);
+  window.setTimeout(() => pullIndicator.classList.remove("is-settling"), 250);
+}
+
+function canStartPull(event) {
+  if (pullRefreshing || !isStandaloneApp() || portalApp.hidden) return false;
+  if (event.touches.length !== 1 || window.scrollY > PULL_TOP_TOLERANCE) return false;
+  if (document.querySelector("dialog[open]")) return false;
+  const active = document.activeElement;
+  if (active && active.matches?.("input, textarea, select")) return false;
+  // Don't hijack scrolling inside a scrolled text box or the PDF preview.
+  for (let element = event.target; element && element !== document.body; element = element.parentElement) {
+    if (element.scrollTop > 0) return false;
+  }
+  return true;
+}
+
+document.addEventListener("touchstart", (event) => {
+  pullStartY = canStartPull(event) ? event.touches[0].clientY : null;
+  pullDistance = 0;
+}, { passive: true });
+
+document.addEventListener("touchmove", (event) => {
+  if (pullStartY === null) return;
+  const delta = event.touches[0].clientY - pullStartY;
+  if (delta <= 0 || window.scrollY > PULL_TOP_TOLERANCE) {
+    if (pullDistance) resetPull();
+    pullStartY = null;
+    return;
+  }
+  // Ease the pull so it feels elastic, and stop the page from bouncing underneath.
+  pullDistance = Math.min(delta * 0.5, PULL_REFRESH_MAX);
+  if (event.cancelable) event.preventDefault();
+  setPullIndicator(pullDistance, pullDistance >= PULL_REFRESH_THRESHOLD ? "ready" : "");
+}, { passive: false });
+
+document.addEventListener("touchend", () => {
+  if (pullStartY === null) return;
+  const shouldRefresh = pullDistance >= PULL_REFRESH_THRESHOLD;
+  if (!shouldRefresh) {
+    resetPull();
+    return;
+  }
+  if (portalHasUnsavedEdits && !window.confirm("Refresh the portal? Changes you haven't saved will be lost.")) {
+    resetPull();
+    return;
+  }
+  pullRefreshing = true;
+  pullStartY = null;
+  setPullIndicator(PULL_REFRESH_THRESHOLD, "refreshing");
+  savePortalPlace();
+  window.location.reload();
+});
+
+document.addEventListener("touchcancel", () => {
+  if (pullStartY !== null) resetPull();
 });

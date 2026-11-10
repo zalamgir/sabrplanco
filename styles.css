@@ -4888,3 +4888,74 @@ h2 em,
   height: 1.2rem;
   flex-basis: 1.2rem;
 }
+
+/* Pull to refresh (Home Screen app) */
+.portal-pull-indicator {
+  --pull-offset: 0px;
+  --pull-rotate: 0deg;
+  --pull-opacity: 0;
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) - 44px);
+  left: 50%;
+  z-index: 50;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d9cbbb;
+  border-radius: 50%;
+  background: #fffcf7;
+  box-shadow: 0 6px 18px rgba(59, 38, 27, 0.14);
+  color: var(--rust);
+  opacity: var(--pull-opacity);
+  pointer-events: none;
+  transform: translate(-50%, var(--pull-offset));
+  visibility: hidden;
+}
+
+.portal-pull-indicator.is-visible {
+  visibility: visible;
+}
+
+.portal-pull-indicator.is-settling {
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.portal-pull-indicator svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+  transform: rotate(var(--pull-rotate));
+}
+
+.portal-pull-indicator.is-ready {
+  border-color: var(--rust);
+}
+
+.portal-pull-indicator.is-refreshing {
+  --pull-opacity: 1;
+}
+
+.portal-pull-indicator.is-refreshing svg {
+  animation: portal-pull-spin 800ms linear infinite;
+}
+
+@keyframes portal-pull-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+body:has(.portal-app[data-theme="dark"]) .portal-pull-indicator {
+  border-color: #71583e;
+  background: #29231d;
+  color: #dfbd98;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-pull-indicator.is-refreshing svg {
+    animation: none;
+  }
+}
