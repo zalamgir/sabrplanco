@@ -921,7 +921,8 @@ function renderDocument(clientId = activeClientId) {
   documentPanel.innerHTML = (activeDocument === "itinerary"
     ? renderItinerary(client, state)
     : renderContract(client, state)) + renderEmailHistory(client.id, activeDocument);
-  if ((state.mode === "view" || state.mode === "upload") && state.uploadUrl) renderPdfPage(state);
+  if (activeDocument === "contract" && isContractLocked(client.id)) showSignedContractPreview(client);
+  else if ((state.mode === "view" || state.mode === "upload") && state.uploadUrl) renderPdfPage(state);
 }
 
 function formatSentAt(value) {
@@ -1239,6 +1240,13 @@ async function downloadGeneratedContract(button) {
 }
 
 async function createEmailPdfAttachment(type, state, client, source, options = {}) {
+  if (source === "signed") {
+    const signed = signedSignatureRequest(client.id);
+    if (!signed?.signed_path) throw new Error("The signed contract is no longer available.");
+    const { data, error } = await supabaseClient.storage.from("portal-documents").download(signed.signed_path);
+    if (error) throw new Error(`Could not load the signed contract: ${error.message}`);
+    return { filename: safePdfFilename(`Sabr Plan Co ${client.name} Signed Contract`, "Signed-Contract"), blob: data };
+  }
   if (source === "uploaded") {
     if (!state.uploadedDocument) throw new Error("The saved PDF is no longer available.");
     const { data, error } = await supabaseClient.storage
@@ -1397,6 +1405,13 @@ function renderItinerary(client, state) {
 
 function renderContract(client, state) {
   if (isContractLocked(client.id) && state.mode !== "view") state.mode = "view";
+  if (isContractLocked(client.id)) {
+    return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> CONTRACT</p><h3>Signed contract</h3></div><span class="portal-draft-label">SIGNED</span></div>
+      ${renderDocumentModeButtons("contract", state)}
+      ${renderSignaturePanel(client, state)}
+      <div class="portal-itinerary-document" data-signed-preview>${renderPdfCanvas()}</div>
+      ${renderEmailForm(client, "contract", state, { signed: true })}`;
+  }
   if (state.mode === "view" && state.viewSource === "pdf" && state.uploadedDocument) {
     return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> CONTRACT</p><h3>Uploaded contract</h3></div><span class="portal-draft-label">SAVED PDF</span></div>
       ${renderDocumentModeButtons("contract", state)}
@@ -1653,23 +1668,26 @@ function renderDraftDeleteButton(type) {
   </div>`;
 }
 
-function renderEmailForm(client, type, state) {
+function renderEmailForm(client, type, state, { signed = false } = {}) {
   const isUploadedPdf = state.viewSource === "pdf" && Boolean(state.uploadedDocument);
   const hasGeneratedDraft = type === "itinerary"
     ? Boolean(state.savedDraft && Array.isArray(state.savedDraft.events))
     : Boolean(state.savedDraft?.clientName && calculateContractAmounts(state.savedDraft.totalFee, state.savedDraft.depositPercentage));
-  if (!isUploadedPdf && !hasGeneratedDraft) return "";
+  if (!signed && !isUploadedPdf && !hasGeneratedDraft) return "";
+  const emailSource = signed ? "signed" : isUploadedPdf ? "uploaded" : "generated";
   const storedRecipients = defaultClientRecipients(client);
-  const documentLabel = type === "itinerary" ? "wedding-day itinerary" : "wedding coordination contract";
+  const documentLabel = type === "itinerary" ? "wedding-day itinerary" : signed ? "signed wedding coordination contract" : "wedding coordination contract";
   const defaultSubject = `Your ${documentLabel} from Sabr Plan Co.`;
-  const defaultMessage = `Hello,\n\nAttached is your ${documentLabel} for your review.\n\nPlease let us know if you have any questions.\n\nWarmly,\nSabr Plan Co.`;
+  const defaultMessage = signed
+    ? `Hello,\n\nAttached is a copy of your signed wedding coordination contract for your records.\n\nPlease let us know if you have any questions.\n\nWarmly,\nSabr Plan Co.`
+    : `Hello,\n\nAttached is your ${documentLabel} for your review.\n\nPlease let us know if you have any questions.\n\nWarmly,\nSabr Plan Co.`;
   const itineraryClientName = type === "itinerary" ? state.savedDraft?.clientName || client.name : client.name;
   const vendorSubject = `Wedding day itinerary for ${itineraryClientName} from Sabr Plan Co.`;
   const vendorMessage = `Hello,\n\nAttached is the wedding day itinerary for ${itineraryClientName}.\n\nPlease let us know if you have any questions.\n\nLooking forward working with you!\n\nWarmly,\nSabr Plan Co.`;
   const supportsVendorRecipients = type === "itinerary";
   return `<details class="portal-email-panel">
-    <summary>Email ${type}${supportsVendorRecipients ? "" : " to client"}</summary>
-    <form class="portal-email-form" data-email-form="${type}" data-email-source="${isUploadedPdf ? "uploaded" : "generated"}" data-client-id="${escapeHtml(client.id)}">
+    <summary>Email ${signed ? "signed contract" : type}${supportsVendorRecipients || signed ? "" : " to client"}</summary>
+    <form class="portal-email-form" data-email-form="${type}" data-email-source="${emailSource}" data-client-id="${escapeHtml(client.id)}">
       ${supportsVendorRecipients ? `<label>Send to<select name="recipient-type">
         <option value="client">Client</option>
         <option value="vendors">Vendors</option>
@@ -1918,6 +1936,7 @@ function clearPortalData() {
   emailHistory.clear();
   signatureRequests.clear();
   unlockedSignedContracts.clear();
+  signedContractPreviews.clear();
   clients.splice(0, clients.length);
   inquiries.splice(0, inquiries.length);
   renderInquiries();
@@ -2302,6 +2321,7 @@ document.querySelector("#delete-client-workspace").addEventListener("click", asy
   emailHistory.delete(clientId);
   signatureRequests.delete(clientId);
   unlockedSignedContracts.delete(clientId);
+  signedContractPreviews.delete(clientId);
   const clientIndex = clients.findIndex((item) => item.id === clientId);
   if (clientIndex >= 0) clients.splice(clientIndex, 1);
   const wasActiveWorkspace = activeClientId === clientId;
@@ -2425,7 +2445,7 @@ documentPanel.addEventListener("click", async (event) => {
   }
   const pageButton = event.target.closest("[data-pdf-page]");
   if (pageButton) {
-    const state = getDocumentState(activeClientId, activeDocument);
+    const state = activePdfPreviewState();
     state.pdfPageNumber += pageButton.dataset.pdfPage === "next" ? 1 : -1;
     await renderPdfPage(state);
     return;
@@ -4127,7 +4147,7 @@ window.visualViewport?.addEventListener("resize", () => {
   window.clearTimeout(pdfZoomTimer);
   pdfZoomTimer = window.setTimeout(() => {
     if (!activeClientId || !documentPanel.querySelector("[data-pdf-canvas]")) return;
-    const state = getDocumentState(activeClientId, activeDocument);
+    const state = activePdfPreviewState();
     if (!state.uploadUrl || !state.pdfDocument) return;
     const wanted = pdfPreviewQuality();
     const current = state.pdfRenderedScale || 0;
@@ -4404,3 +4424,37 @@ document.querySelector("#offline-back").addEventListener("click", () => {
   window.scrollTo(0, 0);
 });
 document.querySelector("#offline-retry").addEventListener("click", () => window.location.reload());
+
+// Signed contract preview ---------------------------------------------------------
+// Once a contract is signed, the portal shows the signed PDF itself (with both
+// signatures and the certificate page) instead of the editable draft.
+const signedContractPreviews = new Map(); // clientId -> PDF preview state
+
+function activePdfPreviewState() {
+  if (activeDocument === "contract" && isContractLocked(activeClientId)) {
+    return signedContractPreviews.get(activeClientId) || getDocumentState(activeClientId, activeDocument);
+  }
+  return getDocumentState(activeClientId, activeDocument);
+}
+
+async function showSignedContractPreview(client) {
+  const signed = latestSignatureRequest(client.id);
+  if (!signed?.signed_path) return;
+  let preview = signedContractPreviews.get(client.id);
+  if (!preview || preview.requestId !== signed.id) {
+    preview = { requestId: signed.id, uploadUrl: "", pdfRenderToken: 0, pdfPageNumber: 1 };
+    signedContractPreviews.set(client.id, preview);
+  }
+  if (!preview.uploadUrl) {
+    const { data, error } = await supabaseClient.storage.from("portal-documents").createSignedUrl(signed.signed_path, 3600);
+    if (error) {
+      const status = documentPanel.querySelector("[data-pdf-status]");
+      if (status) status.textContent = `The signed contract preview couldn't load: ${error.message}`;
+      return;
+    }
+    preview.uploadUrl = data.signedUrl;
+  }
+  if (activeClientId === client.id && activeDocument === "contract" && documentPanel.querySelector("[data-signed-preview]")) {
+    await renderPdfPage(preview);
+  }
+}
