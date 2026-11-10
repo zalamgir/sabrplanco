@@ -32,6 +32,10 @@ The portal's browser-safe Supabase connection settings belong in `portal-config.
 
 Client workspaces can store optional email addresses (added one at a time with **Add email**, up to five), phone, guest count, and notes, and existing clients can be edited from their workspace with **Edit details**. Apply `supabase/migrations/20261111010000_client_contact_details.sql` once in the Supabase SQL Editor to add these columns. Until it is applied, the portal keeps working without the extra fields and shows a reminder after sign-in. A client's saved email and phone fill in automatically on a new contract, and their email fills in when sending a contract or itinerary.
 
+## Website inquiries in the portal
+
+Inquiries sent from `inquiry.html` are still emailed through Web3Forms, and are also saved to the `inquiries` table so they appear on the portal's **Inquiries** page. The form now includes optional wedding date and venue fields. In the portal, each inquiry can be converted to a client (the add-client form opens with the name, email, service, date, venue, and message filled in), archived, or deleted. Apply `supabase/migrations/20261113010000_inquiries.sql` once in the Supabase SQL Editor. The website can only add inquiries; reading, changing, and deleting them is limited to portal admins. If either the email or the database save succeeds, the visitor sees the confirmation message.
+
 ## Contract details settings
 
 Payment and contact details printed on contracts (deposit payment method, balance payment method, contact email and phone, and the coordinator name on the signature line), plus the services list and terms & cancellations, are set in the portal under **Settings → Contract details**. Apply `supabase/migrations/20261112010000_portal_settings.sql` once in the Supabase SQL Editor to enable saving them; until then the portal uses the built-in defaults. Each contract stores a copy of these details when it is saved, so changing settings later does not alter contracts already saved. Contracts saved before this feature keep their original wording.

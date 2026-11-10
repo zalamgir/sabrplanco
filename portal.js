@@ -96,6 +96,12 @@ const MAX_CONTRACT_LIST_ITEM_LENGTH = 2000;
 const PORTAL_SETTINGS_MIGRATION = "supabase/migrations/20261112010000_portal_settings.sql";
 let contractSettings = { ...DEFAULT_CONTRACT_SETTINGS };
 let contractSettingsAvailable = true;
+const inquiries = [];
+let inquiriesAvailable = true;
+let inquiryFilter = "new";
+let convertingInquiryId = null;
+let inquiriesLoadError = "";
+const INQUIRIES_MIGRATION = "supabase/migrations/20261113010000_inquiries.sql";
 let clientFilter = "upcoming";
 let clientSearch = "";
 let editingClientId = null;
@@ -718,7 +724,7 @@ function showView(view) {
     if (selected) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
-  const titles = { calendar: "Your calendar", clients: "Your clients", workspace: "Client workspace", empty: "Your clients", settings: "Portal settings" };
+  const titles = { calendar: "Your calendar", clients: "Your clients", workspace: "Client workspace", empty: "Your clients", settings: "Portal settings", inquiries: "Inquiries" };
   document.querySelector("#portal-page-title").textContent = titles[view] || "Coordinator portal";
 }
 
@@ -1800,6 +1806,7 @@ function renderAll() {
   renderSummary();
   renderCalendar();
   renderClients();
+  renderInquiries();
 }
 
 function clearPortalData() {
@@ -1811,6 +1818,8 @@ function clearPortalData() {
   documents.clear();
   emailHistory.clear();
   clients.splice(0, clients.length);
+  inquiries.splice(0, inquiries.length);
+  renderInquiries();
   calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   selectedDate = toDateKey(today);
   activeClientId = null;
@@ -1843,7 +1852,15 @@ async function authorizePortalUser(user) {
     throw new Error("This account is not approved to access the coordinator portal.");
   }
 
-  await Promise.all([loadPortalData(), loadContractSettings()]);
+  await Promise.all([
+    loadPortalData(),
+    loadContractSettings(),
+    // Inquiries are optional for signing in: show the problem on the Inquiries page instead.
+    loadInquiries().catch((error) => {
+      inquiriesLoadError = error.message || "Unknown error";
+      renderInquiries();
+    }),
+  ]);
   showSignedInPortal(user);
   if (clientDetailsAvailable) hidePortalNotice();
   else {
@@ -2109,6 +2126,8 @@ function refreshToday() {
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") refreshToday();
+  // Pick up inquiries that arrived while the installed app was in the background.
+  if (document.visibilityState === "visible" && !portalApp.hidden) loadInquiries().catch(() => {});
 });
 window.addEventListener("focus", refreshToday);
 window.setInterval(refreshToday, 60 * 1000);
@@ -3098,15 +3117,16 @@ clientEmailList.addEventListener("click", (event) => {
   clientEmailEntry.focus();
 });
 
-function openClientDialog(client = null) {
+function openClientDialog(client = null, inquiry = null) {
   editingClientId = client?.id || null;
+  convertingInquiryId = inquiry?.id || null;
   clientForm.reset();
   clientDateField.dataset.excludeClient = client?.id || "";
   setClientDate(client?.date || "");
   toggleDateField(clientDateField, false);
   setClientEmails(parseEmailRecipients(client?.email || ""));
   clientStatus.textContent = "";
-  document.querySelector("#client-dialog-eyebrow").textContent = client ? "CLIENT DETAILS" : "NEW WORKSPACE";
+  document.querySelector("#client-dialog-eyebrow").textContent = client ? "CLIENT DETAILS" : inquiry ? "FROM INQUIRY" : "NEW WORKSPACE";
   document.querySelector("#client-dialog-title").textContent = client ? "Edit client details" : "Add a client";
   clientSubmitButton.textContent = client ? "Save changes" : "Create workspace";
   document.querySelector("#client-detail-fields").hidden = !clientDetailsAvailable;
@@ -3118,6 +3138,15 @@ function openClientDialog(client = null) {
     fields.namedItem("phone").value = client.phone;
     fields.namedItem("guest-count").value = client.guestCount ?? "";
     fields.namedItem("notes").value = client.notes;
+  }
+  if (inquiry) {
+    const fields = clientForm.elements;
+    fields.namedItem("name").value = inquiry.name || "";
+    fields.namedItem("service").value = inquiryServiceValue(inquiry.service);
+    fields.namedItem("venue").value = inquiry.venue || "";
+    setClientDate(inquiry.wedding_date || "");
+    setClientEmails(parseEmailRecipients(inquiry.email || ""));
+    fields.namedItem("notes").value = inquiry.message ? `From website inquiry: ${inquiry.message}`.slice(0, 5000) : "";
   }
   clientDialog.showModal();
   clientDialog.querySelector('input[name="name"]').focus();
@@ -3148,6 +3177,7 @@ document.querySelector("#edit-client-details").addEventListener("click", () => {
 });
 clientDialog.addEventListener("close", () => {
   editingClientId = null;
+  convertingInquiryId = null;
 });
 document.querySelector("#close-client-form").addEventListener("click", () => clientDialog.close());
 document.querySelector("#cancel-client-form").addEventListener("click", () => clientDialog.close());
@@ -3160,6 +3190,7 @@ clientForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(clientForm);
   const clientId = editingClientId;
+  const inquiryId = convertingInquiryId;
   clientStatus.classList.remove("is-success");
   clientStatus.textContent = "";
   if (!formData.get("date")) {
@@ -3212,6 +3243,14 @@ clientForm.addEventListener("submit", async (event) => {
     clientForm.reset();
     clientDialog.close();
     setPortalNotice("The client workspace was created and saved to Supabase.");
+    if (inquiryId) {
+      try {
+        await updateInquiry(inquiryId, { status: "converted", client_id: client.id });
+        setPortalNotice(`${client.name}'s workspace was created from their inquiry.`);
+      } catch (error) {
+        setPortalNotice(`The client was created, but the inquiry could not be marked as converted: ${error.message}`, true);
+      }
+    }
     await openWorkspace(client.id);
   } catch (error) {
     clientStatus.textContent = error.message || "Unable to create the client workspace.";
@@ -3268,5 +3307,158 @@ document.querySelector("#contract-settings-form").addEventListener("submit", asy
     setPortalNotice(status.textContent, true);
   } finally {
     submitButton.disabled = false;
+  }
+});
+
+// Website inquiries ----------------------------------------------------------
+
+function inquiryServiceValue(service) {
+  const value = (service || "").toLowerCase();
+  if (value.includes("day-of") || value.includes("day of")) return "day_of_coordination";
+  if (value.includes("planning")) return "wedding_planning";
+  return "";
+}
+
+async function loadInquiries() {
+  const { data, error } = await supabaseClient
+    .from("inquiries")
+    .select("id, name, email, service, wedding_date, venue, message, status, client_id, created_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  inquiriesAvailable = !(error && isMissingTableError(error));
+  // A failed load never blocks the rest of the portal; the Inquiries page explains it instead.
+  inquiriesLoadError = error && inquiriesAvailable ? error.message : "";
+  if (!error) inquiries.splice(0, inquiries.length, ...data);
+  else if (!inquiriesAvailable) inquiries.splice(0, inquiries.length);
+  renderInquiries();
+}
+
+async function updateInquiry(id, changes) {
+  const { data, error } = await supabaseClient
+    .from("inquiries")
+    .update(changes)
+    .eq("id", id)
+    .select("id, name, email, service, wedding_date, venue, message, status, client_id, created_at")
+    .single();
+  if (error) throw new Error(error.message);
+  const index = inquiries.findIndex((item) => item.id === id);
+  if (index >= 0) inquiries[index] = data;
+  renderInquiries();
+}
+
+function renderInquiries() {
+  const list = document.querySelector("#inquiry-list");
+  const empty = document.querySelector("#inquiry-empty");
+  const newInquiries = inquiries.filter((item) => item.status === "new");
+  const doneInquiries = inquiries.filter((item) => item.status !== "new");
+  const badge = document.querySelector("#inquiry-badge");
+  badge.textContent = String(newInquiries.length);
+  badge.hidden = newInquiries.length === 0;
+  badge.setAttribute("aria-label", `${newInquiries.length} new`);
+  document.querySelector('[data-inquiry-count="new"]').textContent = `(${newInquiries.length})`;
+  document.querySelector('[data-inquiry-count="done"]').textContent = `(${doneInquiries.length})`;
+  document.querySelectorAll("[data-inquiry-filter]").forEach((button) => {
+    const selected = button.dataset.inquiryFilter === inquiryFilter;
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+
+  const visible = inquiryFilter === "new" ? newInquiries : doneInquiries;
+  list.innerHTML = visible.map(renderInquiryCard).join("");
+  empty.hidden = visible.length > 0 && inquiriesAvailable && !inquiriesLoadError;
+  if (inquiriesLoadError) {
+    empty.textContent = `Inquiries could not be loaded: ${inquiriesLoadError}. Reopen the portal to try again.`;
+  } else if (!inquiriesAvailable) {
+    list.innerHTML = "";
+    empty.textContent = `Website inquiries need a one-time database update. Run ${INQUIRIES_MIGRATION} in the Supabase SQL Editor, then reload the portal.`;
+  } else if (inquiryFilter === "new") {
+    empty.textContent = "No new inquiries. Messages from your website's inquiry form will appear here.";
+  } else {
+    empty.textContent = "Converted and archived inquiries will appear here.";
+  }
+}
+
+function renderInquiryCard(inquiry) {
+  const id = escapeHtml(inquiry.id);
+  const bookedClient = inquiry.wedding_date
+    ? clients.find((client) => client.date === inquiry.wedding_date && client.id !== inquiry.client_id)
+    : null;
+  const linkedClient = inquiry.client_id ? clients.find((client) => client.id === inquiry.client_id) : null;
+  const detail = (label, value) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
+  let actions;
+  if (inquiry.status === "new") {
+    actions = `
+      <button type="button" class="button button-dark portal-inquiry-convert" data-inquiry-action="convert" data-inquiry-id="${id}">Convert to client</button>
+      <button type="button" class="button portal-edit-client" data-inquiry-action="archive" data-inquiry-id="${id}">Archive</button>`;
+  } else if (inquiry.status === "converted") {
+    actions = `
+      <span class="portal-inquiry-status">Converted to client</span>
+      ${linkedClient ? `<button type="button" class="button portal-edit-client" data-inquiry-action="open-client" data-client-id="${escapeHtml(linkedClient.id)}">Open ${escapeHtml(linkedClient.name)}</button>` : ""}`;
+  } else {
+    actions = `
+      <span class="portal-inquiry-status">Archived</span>
+      <button type="button" class="button portal-edit-client" data-inquiry-action="restore" data-inquiry-id="${id}">Move back to New</button>`;
+  }
+  return `<article class="portal-card portal-inquiry-card">
+    <header class="portal-inquiry-head">
+      <strong>${escapeHtml(inquiry.name)}</strong>
+      <small>Received ${escapeHtml(formatSentAt(inquiry.created_at))}</small>
+    </header>
+    <dl class="portal-inquiry-details">
+      ${detail("Email", `<a href="mailto:${escapeHtml(inquiry.email)}">${escapeHtml(inquiry.email)}</a>`)}
+      ${detail("Service", escapeHtml(inquiry.service || "Not specified"))}
+      ${detail("Wedding date", inquiry.wedding_date
+        ? `${escapeHtml(formatDate(inquiry.wedding_date))}${bookedClient ? `<span class="portal-inquiry-clash">Another wedding is booked this day (${escapeHtml(bookedClient.name)})</span>` : ""}`
+        : "Not specified")}
+      ${detail("Venue", escapeHtml(inquiry.venue || "Not specified"))}
+    </dl>
+    ${inquiry.message ? `<p class="portal-inquiry-message">${escapeHtml(inquiry.message)}</p>` : ""}
+    <div class="portal-inquiry-actions">
+      ${actions}
+      <button type="button" class="button portal-delete-client" data-inquiry-action="delete" data-inquiry-id="${id}">Delete</button>
+    </div>
+  </article>`;
+}
+
+document.querySelectorAll("[data-inquiry-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    inquiryFilter = button.dataset.inquiryFilter;
+    renderInquiries();
+  });
+});
+
+document.querySelector("#inquiry-list").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-inquiry-action]");
+  if (!button) return;
+  const action = button.dataset.inquiryAction;
+  if (action === "open-client") {
+    openWorkspace(button.dataset.clientId);
+    return;
+  }
+  const inquiry = inquiries.find((item) => item.id === button.dataset.inquiryId);
+  if (!inquiry) return;
+  if (action === "convert") {
+    openClientDialog(null, inquiry);
+    return;
+  }
+  try {
+    if (action === "archive") {
+      await updateInquiry(inquiry.id, { status: "archived" });
+      setPortalNotice(`${inquiry.name}'s inquiry was archived.`);
+    } else if (action === "restore") {
+      await updateInquiry(inquiry.id, { status: "new" });
+      setPortalNotice(`${inquiry.name}'s inquiry was moved back to New.`);
+    } else if (action === "delete") {
+      if (!window.confirm(`Permanently delete the inquiry from ${inquiry.name}? This cannot be undone.`)) return;
+      button.disabled = true;
+      const { error } = await supabaseClient.from("inquiries").delete().eq("id", inquiry.id);
+      if (error) throw new Error(error.message);
+      inquiries.splice(inquiries.indexOf(inquiry), 1);
+      renderInquiries();
+      setPortalNotice("The inquiry was deleted.");
+    }
+  } catch (error) {
+    button.disabled = false;
+    setPortalNotice(`The inquiry could not be updated: ${error.message || "Unknown error"}`, true);
   }
 });

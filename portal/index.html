@@ -16,13 +16,13 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="../styles.css?v=20261110j" />
-    <script src="../portal-config.js?v=20261110j"></script>
+    <link rel="stylesheet" href="../styles.css?v=20261110k" />
+    <script src="../portal-config.js?v=20261110k"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    <script src="../portal.js?v=20261110j" defer></script>
-    <script src="pwa.js?v=20261110j" defer></script>
+    <script src="../portal.js?v=20261110k" defer></script>
+    <script src="pwa.js?v=20261110k" defer></script>
   </head>
   <body class="portal-body">
     <main class="portal-shell" id="main">
@@ -93,6 +93,10 @@
             </button>
             <button type="button" class="portal-nav-item" data-view="clients">
               <span aria-hidden="true">♡</span> Clients
+            </button>
+            <button type="button" class="portal-nav-item" data-view="inquiries">
+              <span aria-hidden="true">✉</span> Inquiries
+              <span class="portal-nav-badge" id="inquiry-badge" hidden></span>
             </button>
           </nav>
         </aside>
@@ -218,6 +222,23 @@
             </section>
           </section>
 
+          <section class="portal-view" id="inquiries-view" aria-labelledby="inquiries-heading" hidden>
+            <div class="portal-section-intro">
+              <div>
+                <p class="eyebrow"><span class="eyebrow-line"></span> FROM YOUR WEBSITE</p>
+                <h2 id="inquiries-heading">Inquiries</h2>
+              </div>
+              <p>Messages sent through the inquiry form on your website. Convert one to start a client workspace with their details filled in.</p>
+            </div>
+            <div class="portal-client-toolbar">
+              <div class="portal-mode-tabs portal-client-filter" role="group" aria-label="Show inquiries">
+                <button type="button" class="portal-mode-tab is-active" data-inquiry-filter="new" aria-pressed="true">New <span data-inquiry-count="new"></span></button>
+                <button type="button" class="portal-mode-tab" data-inquiry-filter="done" aria-pressed="false">Done <span data-inquiry-count="done"></span></button>
+              </div>
+            </div>
+            <div class="portal-inquiry-list" id="inquiry-list"></div>
+            <p class="portal-muted portal-client-empty" id="inquiry-empty" hidden></p>
+          </section>
           <section class="portal-view" id="clients-view" aria-labelledby="clients-heading" hidden>
             <div class="portal-section-intro">
               <div>

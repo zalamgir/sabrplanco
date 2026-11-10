@@ -49,6 +49,47 @@ portfolioTabs.forEach((tab, index) => {
   });
 });
 
+async function sendInquiryEmail(formData) {
+  const response = await fetch(inquiryForm.action, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(Object.fromEntries(formData)),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result.success !== true) {
+    throw new Error(result.message || "We couldn't send your inquiry. Please try again or email sabrplanco@gmail.com.");
+  }
+}
+
+async function saveInquiryToPortal(formData) {
+  const config = window.PORTAL_CONFIG;
+  if (!config?.supabaseUrl || !config?.supabasePublishableKey) throw new Error("Inquiry storage is not configured.");
+  if (formData.get("botcheck")) throw new Error("Spam check failed.");
+  const text = (name, max) => formData.get(name)?.toString().trim().slice(0, max) || null;
+  const weddingDate = text("wedding_date", 10);
+  // Insert-only: the website can add an inquiry but cannot read any back.
+  const response = await fetch(`${config.supabaseUrl}/rest/v1/inquiries`, {
+    method: "POST",
+    headers: {
+      apikey: config.supabasePublishableKey,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      name: text("name", 200),
+      email: text("email", 320),
+      service: text("service", 100),
+      wedding_date: weddingDate && /^\d{4}-\d{2}-\d{2}$/.test(weddingDate) ? weddingDate : null,
+      venue: text("venue", 250),
+      message: text("message", 5000),
+    }),
+  });
+  if (!response.ok) throw new Error("The inquiry could not be saved.");
+}
+
 const inquiryForm = document.querySelector(".inquiry-form");
 if (inquiryForm) {
   const formStatus = inquiryForm.querySelector(".form-note");
@@ -66,19 +107,16 @@ if (inquiryForm) {
       const formData = new FormData(inquiryForm);
       const inquiryName = formData.get("name")?.toString().trim();
       formData.set("subject", `Sabr Plan Co. - New Inquiry from ${inquiryName}`);
-      const response = await fetch(inquiryForm.action, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(Object.fromEntries(formData)),
-      });
-      const result = await response.json();
+      // Email the inquiry (Web3Forms) and save it for the coordinator portal at the same time.
+      // The inquiry counts as sent if either succeeds.
+      const [emailResult, portalResult] = await Promise.allSettled([
+        sendInquiryEmail(formData),
+        saveInquiryToPortal(formData),
+      ]);
 
-      if (!response.ok || result.success !== true) {
+      if (emailResult.status === "rejected" && portalResult.status === "rejected") {
         formStatus.textContent =
-          result.message || "We couldn't send your inquiry. Please try again or email sabrplanco@gmail.com.";
+          emailResult.reason?.message || "We couldn't send your inquiry. Please try again or email sabrplanco@gmail.com.";
         return;
       }
 
