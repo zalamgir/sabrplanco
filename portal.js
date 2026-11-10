@@ -163,10 +163,21 @@ function serviceLabel(service) {
   return service === "day_of_coordination" ? "Day-of coordination" : "Wedding planning";
 }
 
+let portalNoticeTimer;
+
+function hidePortalNotice() {
+  window.clearTimeout(portalNoticeTimer);
+  document.querySelector("#portal-data-notice").hidden = true;
+}
+
+// Errors stay visible until replaced; confirmations hide themselves after a few seconds.
 function setPortalNotice(message, isError = false) {
   const notice = document.querySelector("#portal-data-notice");
+  window.clearTimeout(portalNoticeTimer);
   notice.classList.toggle("is-error", isError);
-  notice.innerHTML = `<strong>${isError ? "Action needed." : "Supabase connected."}</strong> ${escapeHtml(message)}`;
+  notice.innerHTML = `<strong>${isError ? "Action needed." : "Done."}</strong> ${escapeHtml(message)}`;
+  notice.hidden = false;
+  if (!isError) portalNoticeTimer = window.setTimeout(hidePortalNotice, 6000);
 }
 
 function revokePreviewUrl(url) {
@@ -1602,7 +1613,7 @@ async function authorizePortalUser(user) {
 
   await loadPortalData();
   showSignedInPortal(user);
-  setPortalNotice("Client records, drafts, and PDFs are stored in the private Supabase project. Contract content is a placeholder until your approved template is provided.");
+  hidePortalNotice();
 }
 
 signInForm.addEventListener("submit", async (event) => {
