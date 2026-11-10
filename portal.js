@@ -1222,7 +1222,7 @@ function renderItinerary(client, state) {
         </form>` : ""}
       </div>`;
   }
-  return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> ITINERARY</p><h3>Wedding-day timeline</h3></div><span class="portal-draft-label">STARTER TEMPLATE</span></div>
+  return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> ITINERARY</p><h3>Wedding-day timeline</h3></div></div>
     ${renderDocumentModeButtons("itinerary", state)}
     <form class="portal-ai-itinerary-form" data-ai-itinerary-form>
       <div>
@@ -1294,9 +1294,8 @@ function renderContract(client, state) {
       </div>`;
   }
   const savedAmounts = calculateContractAmounts(state.savedDraft?.totalFee, state.savedDraft?.depositPercentage);
-  return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> CONTRACT</p><h3>Wedding coordination agreement</h3></div><span class="portal-draft-label">DRAFT TEMPLATE</span></div>
+  return `<div class="portal-document-heading"><div><p class="eyebrow"><span class="eyebrow-line"></span> CONTRACT</p><h3>Wedding coordination agreement</h3></div></div>
     ${renderDocumentModeButtons("contract", state)}
-    <div class="portal-legal-notice"><strong>Draft for review only.</strong> This template reflects the sample contract provided. Have the final agreement reviewed and approved before using it with clients.</div>
     <form class="portal-template-form" data-template-form="contract">
       <div class="portal-form-grid">
         <label>Client Name<input name="client-name" type="text" value="${escapeHtml(state.savedDraft?.clientName || state.savedDraft?.name || client.name)}" required /></label>
