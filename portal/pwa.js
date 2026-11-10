@@ -8,7 +8,8 @@ if ("serviceWorker" in navigator) {
       const urls = [
         window.location.href.split("#")[0],
         ...performance.getEntriesByType("resource").map((entry) => entry.name),
-        "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js",
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/legacy/build/pdf.min.mjs",
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/legacy/build/pdf.worker.min.mjs",
       ];
       registration.active?.postMessage({ type: "cache-urls", urls });
     }).catch(() => {});

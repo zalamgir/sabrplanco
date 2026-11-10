@@ -117,14 +117,18 @@
   async function renderContract(url) {
     const container = document.querySelector("#sign-document");
     const openLink = `<a class="sign-open-pdf" href="${url}" target="_blank" rel="noopener">Open full-quality PDF</a>`;
-    const pdfjs = window.pdfjsLib;
-    if (!pdfjs) {
+    // PDF.js (legacy build, for older phones) is loaded as a module when the contract is shown.
+    const PDFJS_BASE_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/legacy/build/";
+    let pdfjs = null;
+    try {
+      pdfjs = await import(`${PDFJS_BASE_URL}pdf.min.mjs`);
+      pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS_BASE_URL}pdf.worker.min.mjs`;
+    } catch {
       container.innerHTML = `<p class="sign-muted">The contract preview couldn't load. ${openLink} to read it.</p>`;
       return;
     }
     container.insertAdjacentHTML("beforeend", openLink);
-    pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
-    const pdf = await pdfjs.getDocument({ url, isEvalSupported: false }).promise;
+    const pdf = await pdfjs.getDocument({ url }).promise;
     for (let number = 1; number <= pdf.numPages; number += 1) {
       const canvas = document.createElement("canvas");
       canvas.className = "sign-page";

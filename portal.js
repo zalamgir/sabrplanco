@@ -1004,11 +1004,26 @@ function waitForPdfOperation(operation) {
   ]).finally(() => window.clearTimeout(timeoutId));
 }
 
+// PDF.js (Mozilla's PDF viewer library) is loaded on demand the first time a PDF is shown.
+// The legacy build supports older phones; the worker is wrapped by PDF.js for the CDN.
+const PDFJS_BASE_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/legacy/build/";
+let pdfJsPromise = null;
+
+function loadPdfJs() {
+  pdfJsPromise ||= import(`${PDFJS_BASE_URL}pdf.min.mjs`).then((pdfjs) => {
+    pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS_BASE_URL}pdf.worker.min.mjs`;
+    return pdfjs;
+  }).catch((error) => {
+    pdfJsPromise = null; // allow a retry, e.g. after the connection returns
+    throw error;
+  });
+  return pdfJsPromise;
+}
+
 async function extractItineraryTextFromPdf(file) {
-  const pdfjs = window.pdfjsLib;
-  if (!pdfjs) throw new Error("The PDF text library did not load. Reload the page and try again.");
-  pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
-  const loadingTask = pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
+  const pdfjs = await loadPdfJs().catch(() => null);
+  if (!pdfjs) throw new Error("The PDF text library did not load. Check your connection and try again.");
+  const loadingTask = pdfjs.getDocument({ data: await file.arrayBuffer() });
   try {
     const pdfDocument = await waitForPdfOperation(loadingTask.promise);
     const pages = [];
@@ -1043,19 +1058,19 @@ async function renderPdfPage(state, { quiet = false } = {}) {
   const canvas = documentPanel.querySelector("[data-pdf-canvas]");
   const status = documentPanel.querySelector("[data-pdf-status]");
   if (!canvas || !status) return;
-  const pdfjs = window.pdfjsLib;
+  const renderToken = ++state.pdfRenderToken;
+  const pdfjs = await loadPdfJs().catch(() => null);
+  if (renderToken !== state.pdfRenderToken) return;
   if (!pdfjs) {
-    status.textContent = "The document preview library did not load. Reload the page and try again.";
+    status.hidden = false;
+    status.textContent = "The document preview library did not load. Check your connection and try again.";
     return;
   }
-
-  const renderToken = ++state.pdfRenderToken;
   if (!quiet) {
     status.hidden = false;
     status.textContent = "Preparing document preview…";
   }
   try {
-    pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
     const previousRenderTask = state.pdfRenderTask;
     if (previousRenderTask) {
       previousRenderTask.cancel();
@@ -1068,7 +1083,7 @@ async function renderPdfPage(state, { quiet = false } = {}) {
     if (renderToken !== state.pdfRenderToken) return;
     if (!state.pdfDocument || state.pdfSource !== state.uploadUrl) {
       if (state.pdfLoadingTask) await state.pdfLoadingTask.destroy();
-      state.pdfLoadingTask = pdfjs.getDocument({ url: state.uploadUrl, isEvalSupported: false });
+      state.pdfLoadingTask = pdfjs.getDocument({ url: state.uploadUrl });
       state.pdfDocument = await waitForPdfOperation(state.pdfLoadingTask.promise);
       state.pdfSource = state.uploadUrl;
       state.pdfPageNumber = 1;
@@ -4351,10 +4366,10 @@ async function openOfflineItinerary(clientId) {
   document.querySelector("#offline-list").hidden = true;
   document.querySelector("#offline-viewer").hidden = false;
   window.scrollTo(0, 0);
-  if (record.pdf && window.pdfjsLib) {
+  if (record.pdf) {
     try {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
-      const pdf = await window.pdfjsLib.getDocument({ data: await record.pdf.arrayBuffer(), isEvalSupported: false }).promise;
+      const pdfjs = await loadPdfJs();
+      const pdf = await pdfjs.getDocument({ data: await record.pdf.arrayBuffer() }).promise;
       const pages = content.querySelector("[data-offline-pdf-pages]");
       for (let number = 1; number <= pdf.numPages; number += 1) {
         const page = await pdf.getPage(number);

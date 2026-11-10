@@ -3,7 +3,7 @@
 // open without signal. Same-origin files are network-first, so updates still arrive
 // whenever there is a connection. Supabase requests (client data, files, sign-in) are
 // never cached here; itineraries saved for offline use live in the page's own storage.
-const CACHE = "sabr-portal-shell-v1";
+const CACHE = "sabr-portal-shell-v2";
 const CDN_HOSTS = new Set(["cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"]);
 
 self.addEventListener("install", (event) => {
