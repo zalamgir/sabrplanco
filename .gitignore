@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Supabase CLI local state (project links, connection info)
+supabase/.temp/
+
+# Local environment files
+.env
+.env.*

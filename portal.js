@@ -815,7 +815,7 @@ async function extractItineraryTextFromPdf(file) {
   const pdfjs = window.pdfjsLib;
   if (!pdfjs) throw new Error("The PDF text library did not load. Reload the page and try again.");
   pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
-  const loadingTask = pdfjs.getDocument({ data: await file.arrayBuffer() });
+  const loadingTask = pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
   try {
     const pdfDocument = await waitForPdfOperation(loadingTask.promise);
     const pages = [];
@@ -863,7 +863,7 @@ async function renderPdfPage(state) {
     if (renderToken !== state.pdfRenderToken) return;
     if (!state.pdfDocument || state.pdfSource !== state.uploadUrl) {
       if (state.pdfLoadingTask) await state.pdfLoadingTask.destroy();
-      state.pdfLoadingTask = pdfjs.getDocument(state.uploadUrl);
+      state.pdfLoadingTask = pdfjs.getDocument({ url: state.uploadUrl, isEvalSupported: false });
       state.pdfDocument = await waitForPdfOperation(state.pdfLoadingTask.promise);
       state.pdfSource = state.uploadUrl;
       state.pdfPageNumber = 1;
