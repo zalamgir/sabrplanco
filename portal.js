@@ -24,8 +24,13 @@ const supabaseClient =
         supabaseConfig.supabasePublishableKey,
       )
     : null;
-const today = new Date();
-today.setHours(0, 0, 0, 0);
+let today = startOfToday();
+
+function startOfToday() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
 
 function toDateKey(date) {
   const year = date.getFullYear();
@@ -59,6 +64,15 @@ let activeView = "calendar";
 let calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 let selectedDate = toDateKey(today);
 let recoverySession = null;
+let clientFilter = "upcoming";
+let clientSearch = "";
+let editingClientId = null;
+let clientDetailsAvailable = true;
+const emailHistory = new Map();
+const CLIENT_BASE_COLUMNS = "id, couple_name, wedding_date, service, venue";
+const CLIENT_DETAIL_COLUMNS = `${CLIENT_BASE_COLUMNS}, email, phone, guest_count, notes`;
+const CLIENT_DETAILS_MIGRATION =
+  "supabase/migrations/20261111010000_client_contact_details.sql";
 const PORTAL_THEME_KEY = "sabrplanco-portal-theme";
 
 function applyPortalTheme(theme, persist = false) {
@@ -624,19 +638,37 @@ function mapClientRow(row) {
     id: row.id,
     name: row.couple_name,
     date: row.wedding_date,
+    serviceValue: row.service,
     service: serviceLabel(row.service),
     venue: row.venue || "",
+    email: row.email || "",
+    phone: row.phone || "",
+    guestCount: Number.isInteger(row.guest_count) ? row.guest_count : null,
+    notes: row.notes || "",
   };
 }
 
+function clientColumns() {
+  return clientDetailsAvailable ? CLIENT_DETAIL_COLUMNS : CLIENT_BASE_COLUMNS;
+}
+
+function isMissingColumnError(error) {
+  return error?.code === "42703" || /column .* does not exist/i.test(error?.message || "");
+}
+
 async function loadPortalData() {
-  const { data, error } = await supabaseClient
+  const selectClients = (columns) => supabaseClient
     .from("clients")
-    .select("id, couple_name, wedding_date, service, venue")
+    .select(columns)
     .order("wedding_date", { ascending: true });
-  if (error) throw new Error(`Could not load client workspaces: ${error.message}`);
-  clients.splice(0, clients.length, ...data.map(mapClientRow));
+  let result = await selectClients(CLIENT_DETAIL_COLUMNS);
+  clientDetailsAvailable = !result.error;
+  // Keep the portal usable until the client details migration has been applied.
+  if (result.error && isMissingColumnError(result.error)) result = await selectClients(CLIENT_BASE_COLUMNS);
+  if (result.error) throw new Error(`Could not load client workspaces: ${result.error.message}`);
+  clients.splice(0, clients.length, ...result.data.map(mapClientRow));
   documents.clear();
+  emailHistory.clear();
   renderAll();
 }
 
@@ -657,23 +689,29 @@ function showView(view) {
   document.querySelector("#portal-page-title").textContent = titles[view] || "Coordinator portal";
 }
 
+function splitClientsByDate() {
+  const todayKey = toDateKey(today);
+  return {
+    upcoming: clients.filter((client) => client.date >= todayKey).sort((a, b) => a.date.localeCompare(b.date)),
+    past: clients.filter((client) => client.date < todayKey).sort((a, b) => b.date.localeCompare(a.date)),
+  };
+}
+
 function renderSummary() {
-  const upcomingClients = clients.filter((client) => {
-    const weddingDate = new Date(`${client.date}T12:00:00`);
-    return weddingDate >= today;
-  }).sort((a, b) => a.date.localeCompare(b.date));
+  const { upcoming, past } = splitClientsByDate();
+  const next = upcoming[0];
   document.querySelector("#portal-summary").innerHTML = `
     <article class="portal-summary-card">
       <span class="portal-summary-icon" aria-hidden="true">♡</span>
-      <span><small>Active couples</small><strong>${clients.length}</strong></span>
+      <span><small>Upcoming weddings</small><strong>${upcoming.length}</strong></span>
     </article>
     <article class="portal-summary-card">
       <span class="portal-summary-icon" aria-hidden="true">▦</span>
-      <span><small>Upcoming weddings</small><strong>${upcomingClients.length}</strong></span>
+      <span><small>Past weddings</small><strong>${past.length}</strong></span>
     </article>
     <article class="portal-summary-card">
       <span class="portal-summary-icon" aria-hidden="true">✧</span>
-      <span><small>Next celebration</small><strong>${escapeHtml(upcomingClients[0] ? formatDate(upcomingClients[0].date, { month: "short", day: "numeric" }) : "—")}</strong></span>
+      <span><small>Next celebration</small><strong>${escapeHtml(next ? formatDate(next.date, { month: "short", day: "numeric" }) : "—")}</strong>${next ? `<small class="portal-summary-detail">${escapeHtml(next.name)}</small>` : ""}</span>
     </article>`;
 }
 
@@ -738,9 +776,7 @@ function renderSelectedDay() {
 }
 
 function renderAgenda() {
-  const upcoming = clients
-    .filter((client) => new Date(`${client.date}T12:00:00`) >= today)
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const { upcoming } = splitClientsByDate();
   const list = document.querySelector("#upcoming-list");
   if (!upcoming.length) {
     list.innerHTML = '<p class="portal-muted">No upcoming weddings yet. Add a client to get started.</p>';
@@ -754,9 +790,35 @@ function renderAgenda() {
     </button>`).join("");
 }
 
+function clientMatchesSearch(client, query) {
+  return [client.name, client.venue, client.email, client.phone]
+    .some((value) => value && value.toLowerCase().includes(query));
+}
+
 function renderClients() {
   const grid = document.querySelector("#client-grid");
-  grid.innerHTML = clients.map((client) => `
+  const emptyMessage = document.querySelector("#client-grid-empty");
+  const { upcoming, past } = splitClientsByDate();
+  const query = clientSearch.trim().toLowerCase();
+  // A search looks through every client so a couple can be found without switching tabs.
+  const visibleClients = query
+    ? [...upcoming, ...past].filter((client) => clientMatchesSearch(client, query))
+    : clientFilter === "past" ? past : upcoming;
+
+  document.querySelectorAll("[data-client-filter]").forEach((button) => {
+    const selected = !query && button.dataset.clientFilter === clientFilter;
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  document.querySelector('[data-client-count="upcoming"]').textContent = `(${upcoming.length})`;
+  document.querySelector('[data-client-count="past"]').textContent = `(${past.length})`;
+
+  emptyMessage.hidden = visibleClients.length > 0;
+  if (query) emptyMessage.textContent = `No clients match “${clientSearch.trim()}”.`;
+  else if (clientFilter === "past") emptyMessage.textContent = "No past weddings yet.";
+  else emptyMessage.textContent = "No upcoming weddings. Check Past, or add a new client.";
+
+  grid.innerHTML = visibleClients.map((client) => `
     <button class="portal-client-card" type="button" data-open-client="${escapeHtml(client.id)}">
       <span class="portal-client-card-top"><span class="portal-client-avatar" aria-hidden="true">♡</span><span class="portal-agenda-arrow" aria-hidden="true">↗︎</span></span>
       <strong>${escapeHtml(client.name)}</strong>
@@ -776,10 +838,44 @@ function renderDocument(clientId = activeClientId) {
     if (selected) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
-  documentPanel.innerHTML = activeDocument === "itinerary"
+  documentPanel.innerHTML = (activeDocument === "itinerary"
     ? renderItinerary(client, state)
-    : renderContract(client, state);
+    : renderContract(client, state)) + renderEmailHistory(client.id, activeDocument);
   if ((state.mode === "view" || state.mode === "upload") && state.uploadUrl) renderPdfPage(state);
+}
+
+function formatSentAt(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function renderEmailHistory(clientId, type) {
+  const history = emailHistory.get(clientId);
+  if (!Array.isArray(history)) return "";
+  const label = type === "itinerary" ? "itinerary" : "contract";
+  const sent = history.filter((item) => item.document_type === type);
+  const items = sent.map((item) => `
+      <li>
+        <strong>${escapeHtml((item.recipient_emails || []).join(", "))}</strong>
+        <small>${escapeHtml(formatSentAt(item.sent_at))} · ${escapeHtml(item.subject || "")}</small>
+      </li>`).join("");
+  return `<section class="portal-email-history" data-email-history aria-label="Email history for this ${label}">
+    <p class="eyebrow"><span class="eyebrow-line"></span> EMAIL HISTORY</p>
+    ${sent.length ? `<ul>${items}</ul>` : `<p class="portal-muted">This ${label} hasn’t been emailed from the portal yet.</p>`}
+  </section>`;
+}
+
+function refreshEmailHistory(clientId, type) {
+  if (activeClientId !== clientId || activeDocument !== type) return;
+  const section = documentPanel.querySelector("[data-email-history]");
+  if (section) section.outerHTML = renderEmailHistory(clientId, type);
 }
 
 function renderDocumentModeButtons(type, state) {
@@ -1370,12 +1466,11 @@ function renderEmailForm(client, type, state) {
     ? Boolean(state.savedDraft && Array.isArray(state.savedDraft.events))
     : Boolean(state.savedDraft?.clientName && calculateContractAmounts(state.savedDraft.totalFee, state.savedDraft.depositPercentage));
   if (!isUploadedPdf && !hasGeneratedDraft) return "";
-  const contractState = getDocumentState(client.id, "contract");
-  const storedRecipients = parseEmailRecipients(contractState.savedDraft?.clientEmail || "");
+  const storedRecipients = defaultClientRecipients(client);
   const documentLabel = type === "itinerary" ? "wedding-day itinerary" : "wedding coordination contract";
   const defaultSubject = `Your ${documentLabel} from Sabr Plan Co.`;
   const defaultMessage = `Hello,\n\nAttached is your ${documentLabel} for your review.\n\nPlease let us know if you have any questions.\n\nWarmly,\nSabr Plan Co.`;
-  const itineraryClientName = type === "itinerary" ? state.savedDraft?.clientName || client.couple_name : client.couple_name;
+  const itineraryClientName = type === "itinerary" ? state.savedDraft?.clientName || client.name : client.name;
   const vendorSubject = `Wedding day itinerary for ${itineraryClientName} from Sabr Plan Co.`;
   const vendorMessage = `Hello,\n\nAttached is the wedding day itinerary for ${itineraryClientName}.\n\nPlease let us know if you have any questions.\n\nLooking forward working with you!\n\nWarmly,\nSabr Plan Co.`;
   const supportsVendorRecipients = type === "itinerary";
@@ -1410,6 +1505,11 @@ function renderEmailForm(client, type, state) {
       </div>
     </form>
   </details>`;
+}
+
+function defaultClientRecipients(client) {
+  const contractState = getDocumentState(client.id, "contract");
+  return parseEmailRecipients(client.email || contractState.savedDraft?.clientEmail || "").slice(0, 5);
 }
 
 function parseEmailRecipients(value) {
@@ -1497,7 +1597,7 @@ function timePeriod(time) {
 
 async function loadClientWorkspace(clientId) {
   documents.delete(clientId);
-  const [draftResult, documentResult] = await Promise.all([
+  const [draftResult, documentResult, historyResult] = await Promise.all([
     supabaseClient
       .from("document_drafts")
       .select("document_type, content")
@@ -1506,7 +1606,15 @@ async function loadClientWorkspace(clientId) {
       .from("client_documents")
       .select("id, document_type, storage_path, file_name")
       .eq("client_id", clientId),
+    supabaseClient
+      .from("email_deliveries")
+      .select("document_type, recipient_emails, subject, sent_at")
+      .eq("client_id", clientId)
+      .order("sent_at", { ascending: false })
+      .limit(50),
   ]);
+  // History is informational, so a failure here should not block the workspace.
+  emailHistory.set(clientId, historyResult.error ? null : historyResult.data);
   if (draftResult.error) throw new Error(`Could not load document drafts: ${draftResult.error.message}`);
   if (documentResult.error) throw new Error(`Could not load uploaded PDFs: ${documentResult.error.message}`);
 
@@ -1545,13 +1653,39 @@ async function loadClientWorkspace(clientId) {
   documents.set(clientId, clientDocuments);
 }
 
+function renderWorkspaceHeading(client) {
+  document.querySelector("#workspace-title").textContent = client.name;
+  document.querySelector("#workspace-meta").textContent = `${formatDate(client.date)} · ${client.service}${client.venue ? ` · ${client.venue}` : ""}`;
+
+  const contact = document.querySelector("#workspace-contact");
+  const parts = [];
+  parseEmailRecipients(client.email).forEach((email) => {
+    const link = document.createElement("a");
+    link.href = `mailto:${email}`;
+    link.textContent = email;
+    parts.push(link);
+  });
+  if (client.phone) {
+    const link = document.createElement("a");
+    link.href = `tel:${client.phone.replace(/[^\d+]/g, "")}`;
+    link.textContent = client.phone;
+    parts.push(link);
+  }
+  if (client.guestCount !== null) parts.push(`${client.guestCount} ${client.guestCount === 1 ? "guest" : "guests"}`);
+  contact.replaceChildren(...parts.flatMap((part, index) => (index ? [" · ", part] : [part])));
+  contact.hidden = parts.length === 0;
+
+  const notes = document.querySelector("#workspace-notes");
+  notes.textContent = client.notes;
+  notes.hidden = !client.notes;
+}
+
 async function openWorkspace(clientId) {
   const client = clients.find((item) => item.id === clientId);
   if (!client) return;
   activeClientId = clientId;
   activeDocument = "contract";
-  document.querySelector("#workspace-title").textContent = client.name;
-  document.querySelector("#workspace-meta").textContent = `${formatDate(client.date)} · ${client.service}${client.venue ? ` · ${client.venue}` : ""}`;
+  renderWorkspaceHeading(client);
   showView("workspace");
   documentPanel.innerHTML = '<p class="portal-muted">Loading this client’s private workspace…</p>';
   try {
@@ -1578,6 +1712,7 @@ function clearPortalData() {
     });
   });
   documents.clear();
+  emailHistory.clear();
   clients.splice(0, clients.length);
   calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   selectedDate = toDateKey(today);
@@ -1613,7 +1748,13 @@ async function authorizePortalUser(user) {
 
   await loadPortalData();
   showSignedInPortal(user);
-  hidePortalNotice();
+  if (clientDetailsAvailable) hidePortalNotice();
+  else {
+    setPortalNotice(
+      `Client contact details need a one-time database update. Run ${CLIENT_DETAILS_MIGRATION} in the Supabase SQL Editor, then reload the portal.`,
+      true,
+    );
+  }
 }
 
 signInForm.addEventListener("submit", async (event) => {
@@ -1840,6 +1981,41 @@ document.querySelector("#client-grid").addEventListener("click", (event) => {
 
 document.querySelector("#back-to-clients").addEventListener("click", () => showView("clients"));
 
+document.querySelectorAll("[data-client-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    clientFilter = button.dataset.clientFilter;
+    clientSearch = "";
+    document.querySelector("#client-search").value = "";
+    renderClients();
+  });
+});
+
+document.querySelector("#client-search").addEventListener("input", (event) => {
+  clientSearch = event.target.value;
+  renderClients();
+});
+
+// The installed app can stay open for days, so move "today" forward when the date changes.
+function refreshToday() {
+  const now = startOfToday();
+  if (now.getTime() === today.getTime()) return;
+  const wasShowingToday = selectedDate === toDateKey(today)
+    && calendarMonth.getFullYear() === today.getFullYear()
+    && calendarMonth.getMonth() === today.getMonth();
+  today = now;
+  if (wasShowingToday) {
+    calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    selectedDate = toDateKey(today);
+  }
+  renderAll();
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") refreshToday();
+});
+window.addEventListener("focus", refreshToday);
+window.setInterval(refreshToday, 60 * 1000);
+
 document.querySelectorAll(".portal-document-link").forEach((button) => {
   button.addEventListener("click", () => {
     activeDocument = button.dataset.document;
@@ -1889,6 +2065,7 @@ document.querySelector("#delete-client-workspace").addEventListener("click", asy
     Object.values(clientDocuments).forEach((state) => revokePreviewUrl(state.uploadUrl));
   }
   documents.delete(clientId);
+  emailHistory.delete(clientId);
   const clientIndex = clients.findIndex((item) => item.id === clientId);
   if (clientIndex >= 0) clients.splice(clientIndex, 1);
   const wasActiveWorkspace = activeClientId === clientId;
@@ -2242,7 +2419,12 @@ documentPanel.addEventListener("change", (event) => {
   const messageInput = form.elements.namedItem("message");
   const isVendor = recipientType.value === "vendors";
 
-  form.querySelector("[data-recipient-list]").replaceChildren();
+  const recipientList = form.querySelector("[data-recipient-list]");
+  recipientList.replaceChildren();
+  if (!isVendor) {
+    const client = clients.find((item) => item.id === form.dataset.clientId);
+    if (client) recipientList.innerHTML = defaultClientRecipients(client).map(renderEmailRecipient).join("");
+  }
   recipientInput.value = "";
   form.querySelector(".portal-form-status").textContent = "";
   recipientLabel.firstChild.textContent = `${isVendor ? "Vendor" : "Client"} email address(es)`;
@@ -2523,12 +2705,13 @@ documentPanel.addEventListener("submit", async (event) => {
     if (blob.type && blob.type !== "application/pdf") throw new Error("The generated attachment is not a PDF.");
     if (blob.size > 15 * 1024 * 1024) throw new Error("The PDF is larger than the 15 MB email limit.");
 
+    const subject = form.elements.namedItem("subject").value.trim();
     const { data, error } = await supabaseClient.functions.invoke("send-client-document", {
       body: {
         clientId: client.id,
         documentType: type,
         recipients,
-        subject: form.elements.namedItem("subject").value.trim(),
+        subject,
         message: form.elements.namedItem("message").value.trim(),
         attachments: [{ filename, content: await blobToBase64(blob) }],
       },
@@ -2546,6 +2729,11 @@ documentPanel.addEventListener("submit", async (event) => {
       ? "Email sent, but its delivery record could not be saved."
       : `Email sent to ${recipients.join(", ")}.`;
     setPortalNotice(status.textContent, data.logged === false);
+    const history = emailHistory.get(client.id);
+    if (data.logged !== false && Array.isArray(history)) {
+      history.unshift({ document_type: type, recipient_emails: recipients, subject, sent_at: new Date().toISOString() });
+      refreshEmailHistory(client.id, type);
+    }
   } catch (error) {
     status.textContent = error.message || "Unable to send the client email.";
     setPortalNotice(status.textContent, true);
@@ -2643,13 +2831,55 @@ documentPanel.addEventListener("submit", async (event) => {
   setPortalNotice("The document draft was saved to Supabase.");
 });
 
-function openClientDialog() {
+function openClientDialog(client = null) {
+  editingClientId = client?.id || null;
+  clientForm.reset();
+  clientStatus.textContent = "";
+  document.querySelector("#client-dialog-eyebrow").textContent = client ? "CLIENT DETAILS" : "NEW WORKSPACE";
+  document.querySelector("#client-dialog-title").textContent = client ? "Edit client details" : "Add a client";
+  clientSubmitButton.textContent = client ? "Save changes" : "Create workspace";
+  document.querySelector("#client-detail-fields").hidden = !clientDetailsAvailable;
+  if (client) {
+    const fields = clientForm.elements;
+    fields.namedItem("name").value = client.name;
+    fields.namedItem("date").value = client.date;
+    fields.namedItem("service").value = client.serviceValue;
+    fields.namedItem("venue").value = client.venue;
+    fields.namedItem("email").value = client.email;
+    fields.namedItem("phone").value = client.phone;
+    fields.namedItem("guest-count").value = client.guestCount ?? "";
+    fields.namedItem("notes").value = client.notes;
+  }
   clientDialog.showModal();
   clientDialog.querySelector('input[name="name"]').focus();
 }
 
-document.querySelector("#open-client-form").addEventListener("click", openClientDialog);
-document.querySelectorAll('[data-action="add-client"]').forEach((button) => button.addEventListener("click", openClientDialog));
+function clientPayloadFromForm(formData) {
+  const payload = {
+    couple_name: formData.get("name").toString().trim(),
+    wedding_date: formData.get("date").toString(),
+    service: formData.get("service").toString(),
+    venue: formData.get("venue").toString().trim() || null,
+  };
+  if (clientDetailsAvailable) {
+    const guestCount = formData.get("guest-count").toString().trim();
+    payload.email = parseEmailRecipients(formData.get("email").toString()).join(", ") || null;
+    payload.phone = formData.get("phone").toString().trim() || null;
+    payload.guest_count = guestCount ? Number(guestCount) : null;
+    payload.notes = formData.get("notes").toString().trim() || null;
+  }
+  return payload;
+}
+
+document.querySelector("#open-client-form").addEventListener("click", () => openClientDialog());
+document.querySelectorAll('[data-action="add-client"]').forEach((button) => button.addEventListener("click", () => openClientDialog()));
+document.querySelector("#edit-client-details").addEventListener("click", () => {
+  const client = clients.find((item) => item.id === activeClientId);
+  if (client) openClientDialog(client);
+});
+clientDialog.addEventListener("close", () => {
+  editingClientId = null;
+});
 document.querySelector("#close-client-form").addEventListener("click", () => clientDialog.close());
 document.querySelector("#cancel-client-form").addEventListener("click", () => clientDialog.close());
 
@@ -2660,20 +2890,43 @@ clientDialog.addEventListener("click", (event) => {
 clientForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(clientForm);
+  const clientId = editingClientId;
   clientStatus.classList.remove("is-success");
   clientStatus.textContent = "";
   clientSubmitButton.disabled = true;
-  clientSubmitButton.textContent = "Creating…";
+  clientSubmitButton.textContent = clientId ? "Saving…" : "Creating…";
+  if (clientId) {
+    try {
+      const { data, error } = await supabaseClient
+        .from("clients")
+        .update(clientPayloadFromForm(formData))
+        .eq("id", clientId)
+        .select(clientColumns())
+        .single();
+      if (error) throw new Error(`Client details could not be saved: ${error.message}`);
+      const client = clients.find((item) => item.id === clientId);
+      Object.assign(client, mapClientRow(data));
+      renderAll();
+      if (activeClientId === clientId) {
+        renderWorkspaceHeading(client);
+        if (getDocumentState(clientId, activeDocument).mode === "view") renderDocument();
+      }
+      clientDialog.close();
+      setPortalNotice(`${client.name}'s details were updated.`);
+    } catch (error) {
+      clientStatus.textContent = error.message || "Unable to save the client details.";
+      setPortalNotice(clientStatus.textContent, true);
+    } finally {
+      clientSubmitButton.disabled = false;
+      clientSubmitButton.textContent = "Save changes";
+    }
+    return;
+  }
   try {
     const { data, error } = await supabaseClient
       .from("clients")
-      .insert({
-        couple_name: formData.get("name").toString().trim(),
-        wedding_date: formData.get("date").toString(),
-        service: formData.get("service").toString(),
-        venue: formData.get("venue").toString().trim() || null,
-      })
-      .select("id, couple_name, wedding_date, service, venue")
+      .insert(clientPayloadFromForm(formData))
+      .select(clientColumns())
       .single();
     if (error) throw new Error(`Client workspace could not be created: ${error.message}`);
     const client = mapClientRow(data);

@@ -4238,3 +4238,176 @@ h2 em,
     display: none;
   }
 }
+
+/* Client details, client list controls, and email history */
+.portal-dialog-details {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.portal-dialog-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #ded5c9;
+  border-radius: 0;
+  padding: 0.65rem 0.7rem;
+  background: #fffefa;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.67rem;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.portal-dialog-form textarea:focus {
+  border-color: var(--rust);
+  outline: 2px solid rgba(150, 106, 77, 0.2);
+}
+
+.portal-summary-card small.portal-summary-detail {
+  margin-top: 0.15rem;
+  color: var(--rust);
+}
+
+.portal-client-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.portal-client-toolbar .portal-mode-tabs {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+
+.portal-client-search {
+  width: min(100%, 300px);
+  margin-bottom: 0.5rem;
+  border: 1px solid #ded5c9;
+  border-radius: 0;
+  padding: 0.6rem 0.7rem;
+  background: #fffefa;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.67rem;
+}
+
+.portal-client-search:focus {
+  border-color: var(--rust);
+  outline: 2px solid rgba(150, 106, 77, 0.2);
+}
+
+.portal-client-empty {
+  margin: 0.5rem 0 0;
+}
+
+.portal-workspace-heading .portal-client-contact,
+.portal-workspace-heading .portal-client-notes {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.65rem;
+  line-height: 1.6;
+}
+
+.portal-client-contact a {
+  color: var(--rust);
+}
+
+.portal-workspace-heading .portal-client-notes {
+  max-width: 560px;
+  white-space: pre-line;
+}
+
+.portal-edit-client {
+  min-height: 36px;
+  padding: 0.45rem 0.7rem;
+  border-color: #c5aa8b;
+  background: transparent;
+  color: var(--espresso);
+  font-size: 0.6rem;
+}
+
+.portal-edit-client:hover {
+  border-color: var(--espresso);
+  background: var(--espresso);
+  color: #fffaf5;
+}
+
+.portal-app[data-theme="dark"] .portal-edit-client {
+  border-color: #71583e;
+  color: #f3ece3;
+}
+
+.portal-email-history {
+  margin-top: 1.4rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
+.portal-email-history ul {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.portal-email-history li {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.portal-email-history strong {
+  color: var(--ink);
+  font-size: 0.66rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.portal-email-history small {
+  color: var(--muted);
+  font-size: 0.6rem;
+  overflow-wrap: anywhere;
+}
+
+.portal-email-history .portal-muted {
+  margin: 0.6rem 0 0;
+}
+
+.portal-app[data-theme="dark"] .portal-dialog-form textarea,
+.portal-app[data-theme="dark"] .portal-client-search {
+  border-color: #514438;
+  background: #211c17;
+  color: #f3ece3;
+}
+
+.portal-app[data-theme="dark"] .portal-client-contact a,
+.portal-app[data-theme="dark"] .portal-summary-card small.portal-summary-detail {
+  color: #dfbd98;
+}
+
+@media (max-width: 650px) {
+  .portal-client-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    border-bottom: 0;
+  }
+
+  .portal-client-toolbar .portal-mode-tabs {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .portal-client-search {
+    width: 100%;
+    margin-bottom: 0;
+  }
+}

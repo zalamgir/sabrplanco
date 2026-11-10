@@ -190,7 +190,15 @@
               </div>
               <p>Open a couple's workspace to manage their itinerary and contract drafts.</p>
             </div>
+            <div class="portal-client-toolbar">
+              <div class="portal-mode-tabs portal-client-filter" role="group" aria-label="Show clients">
+                <button type="button" class="portal-mode-tab is-active" data-client-filter="upcoming" aria-pressed="true">Upcoming <span data-client-count="upcoming"></span></button>
+                <button type="button" class="portal-mode-tab" data-client-filter="past" aria-pressed="false">Past <span data-client-count="past"></span></button>
+              </div>
+              <input class="portal-client-search" id="client-search" type="search" placeholder="Search name, venue, email, or phone" aria-label="Search clients" autocomplete="off" />
+            </div>
             <div class="portal-client-grid" id="client-grid"></div>
+            <p class="portal-muted portal-client-empty" id="client-grid-empty" hidden></p>
           </section>
 
           <section class="portal-view portal-workspace-view" id="workspace-view" aria-labelledby="workspace-title" hidden>
@@ -200,9 +208,12 @@
                 <p class="eyebrow"><span class="eyebrow-line"></span> CLIENT WORKSPACE</p>
                 <h2 id="workspace-title"></h2>
                 <p class="portal-client-meta" id="workspace-meta"></p>
+                <p class="portal-client-contact" id="workspace-contact" hidden></p>
+                <p class="portal-client-notes" id="workspace-notes" hidden></p>
               </div>
               <div class="portal-workspace-actions">
                 <span class="portal-demo-pill">PRIVATE WORKSPACE</span>
+                <button type="button" class="button portal-edit-client" id="edit-client-details">Edit details</button>
                 <button type="button" class="button portal-delete-client" id="delete-client-workspace">Delete client</button>
               </div>
             </div>
@@ -255,7 +266,7 @@
           <form class="portal-dialog-form" id="client-form">
             <div class="portal-dialog-heading">
               <div>
-                <p class="eyebrow"><span class="eyebrow-line"></span> NEW WORKSPACE</p>
+                <p class="eyebrow"><span class="eyebrow-line"></span> <span id="client-dialog-eyebrow">NEW WORKSPACE</span></p>
                 <h2 id="client-dialog-title">Add a client</h2>
               </div>
               <button class="dialog-close" id="close-client-form" type="button" aria-label="Close dialog">×</button>
@@ -280,6 +291,24 @@
               Venue or location <span class="portal-optional">(optional)</span>
               <input name="venue" type="text" placeholder="Venue name or city" />
             </label>
+            <fieldset class="portal-dialog-details" id="client-detail-fields">
+              <label>
+                Email <span class="portal-optional">(optional, separate two with a comma)</span>
+                <input name="email" type="email" multiple maxlength="320" autocomplete="off" placeholder="alex@example.com, jamie@example.com" />
+              </label>
+              <label>
+                Phone <span class="portal-optional">(optional)</span>
+                <input name="phone" type="tel" maxlength="40" autocomplete="off" placeholder="(555) 123-4567" />
+              </label>
+              <label>
+                Guest count <span class="portal-optional">(optional)</span>
+                <input name="guest-count" type="number" min="0" max="10000" step="1" inputmode="numeric" />
+              </label>
+              <label>
+                Notes <span class="portal-optional">(optional)</span>
+                <textarea name="notes" rows="3" maxlength="5000" placeholder="Anything to remember about this couple"></textarea>
+              </label>
+            </fieldset>
             <p class="portal-form-status" id="portal-client-status" role="status" aria-live="polite"></p>
             <div class="portal-dialog-actions">
               <button class="button portal-cancel-button" id="cancel-client-form" type="button">Cancel</button>
