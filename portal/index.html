@@ -16,13 +16,13 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="../styles.css?v=20261110g" />
-    <script src="../portal-config.js?v=20261110g"></script>
+    <link rel="stylesheet" href="../styles.css?v=20261110h" />
+    <script src="../portal-config.js?v=20261110h"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    <script src="../portal.js?v=20261110g" defer></script>
-    <script src="pwa.js?v=20261110g" defer></script>
+    <script src="../portal.js?v=20261110h" defer></script>
+    <script src="pwa.js?v=20261110h" defer></script>
   </head>
   <body class="portal-body">
     <main class="portal-shell" id="main">
@@ -118,7 +118,7 @@
                 <p class="eyebrow"><span class="eyebrow-line"></span> PREFERENCES</p>
                 <h2 id="settings-heading">Portal settings</h2>
               </div>
-              <p>Personalize how the coordinator portal looks on this device.</p>
+              <p>Choose how the portal looks and set the details printed on contracts.</p>
             </div>
             <section class="portal-card portal-settings-card" aria-labelledby="theme-heading">
               <div>
@@ -136,6 +136,38 @@
                   <span><strong>Dark mode</strong><small>Espresso and warm neutral tones</small></span>
                 </button>
               </div>
+            </section>
+            <section class="portal-card portal-settings-card portal-contract-settings" aria-labelledby="contract-settings-heading">
+              <div>
+                <p class="eyebrow"><span class="eyebrow-line"></span> CONTRACTS</p>
+                <h3 id="contract-settings-heading">Contract details</h3>
+                <p class="portal-muted">Payment and contact details printed on contracts. Changes apply to contracts you save from now on. Contracts already saved keep the details they were created with.</p>
+              </div>
+              <form class="portal-template-form" id="contract-settings-form">
+                <fieldset class="portal-dialog-details">
+                  <label>Deposit payment method
+                    <input name="depositPayment" type="text" maxlength="200" required placeholder="e.g. Zelle (929) 240-2040" />
+                    <span class="portal-email-recipient-help">Appears as "30% ($300) via …"</span>
+                  </label>
+                  <label>Balance payment method
+                    <input name="balancePayment" type="text" maxlength="200" required placeholder="e.g. Cash, check, or Zelle" />
+                    <span class="portal-email-recipient-help">Appears as "Balance … due by the event date via …"</span>
+                  </label>
+                  <label>Contact email on contracts
+                    <input name="contactEmail" type="email" maxlength="200" required />
+                  </label>
+                  <label>Contact phone on contracts
+                    <input name="contactPhone" type="tel" maxlength="40" />
+                  </label>
+                  <label>Coordinator name (signature line)
+                    <input name="coordinatorName" type="text" maxlength="120" />
+                  </label>
+                </fieldset>
+                <div class="portal-form-actions">
+                  <span class="portal-form-status" role="status" aria-live="polite"></span>
+                  <button type="submit" class="button button-dark">Save contract details</button>
+                </div>
+              </form>
             </section>
           </section>
 

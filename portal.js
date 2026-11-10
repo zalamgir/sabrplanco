@@ -64,6 +64,26 @@ let activeView = "calendar";
 let calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 let selectedDate = toDateKey(today);
 let recoverySession = null;
+// Contracts saved before contract settings existed keep exactly the wording they were created with.
+const LEGACY_CONTRACT_DETAILS = Object.freeze({
+  depositPayment: "Zelle; (929) 240-2040",
+  balancePayment: "Cash",
+  balanceDueMethods: "Cash/Check/Zelle",
+  contactEmail: "sabrplanco@gmail.com",
+  contactPhone: "(929) 240-2040",
+  coordinatorName: "Prioti Taher",
+});
+const DEFAULT_CONTRACT_SETTINGS = Object.freeze({
+  depositPayment: "Zelle (929) 240-2040",
+  balancePayment: "Cash, check, or Zelle",
+  contactEmail: "sabrplanco@gmail.com",
+  contactPhone: "(929) 240-2040",
+  coordinatorName: "Prioti Taher",
+});
+const CONTRACT_SETTING_FIELDS = Object.keys(DEFAULT_CONTRACT_SETTINGS);
+const PORTAL_SETTINGS_MIGRATION = "supabase/migrations/20261112010000_portal_settings.sql";
+let contractSettings = { ...DEFAULT_CONTRACT_SETTINGS };
+let contractSettingsAvailable = true;
 let clientFilter = "upcoming";
 let clientSearch = "";
 let editingClientId = null;
@@ -567,14 +587,15 @@ function drawContractPdf(state, scriptLogo) {
     ["Event Location", location || "—"],
   ].forEach(([label, value]) => drawDetail(label, value));
 
+  const details = contractDetailsFor(draft);
   drawSectionHeading("Fees & Payment");
   drawDetail("Total Fee for Services", `${formatCurrency(amounts?.total)} incl. Travel Fees`);
   drawDetail(
     "Non-Refundable Deposit Due Upon Execution of Contract",
-    `${formatPercentage(draft.depositPercentage)}% (${formatCurrency(amounts?.deposit)}) via Zelle; (929) 240-2040`,
+    `${formatPercentage(draft.depositPercentage)}% (${formatCurrency(amounts?.deposit)}) via ${details.depositPayment}`,
   );
-  drawDetail("Balance", `${formatCurrency(amounts?.balance)} due by ${dates || "the event date"} via Cash`);
-  drawDetail("Balance Due Date", "Day of Event (Cash/Check/Zelle)");
+  drawDetail("Balance", `${formatCurrency(amounts?.balance)} due by ${dates || "the event date"} via ${details.balancePayment}`);
+  drawDetail("Balance Due Date", `Day of Event (${details.balanceDueMethods})`);
 
   drawSectionHeading("Day of Coordination Services");
   contractServices.forEach(drawBullet);
@@ -593,7 +614,7 @@ function drawContractPdf(state, scriptLogo) {
     size: 8.5,
     after: 2,
   });
-  drawParagraph("sabrplanco@gmail.com  |  (929) 240-2040", {
+  drawParagraph([details.contactEmail, details.contactPhone].filter(Boolean).join("  |  "), {
     size: 8.5,
     style: "bold",
     after: 8,
@@ -611,7 +632,7 @@ function drawContractPdf(state, scriptLogo) {
   pdf.line(PDF_MARGIN + signatureWidth + signatureGap, signatureY, PDF_PAGE_WIDTH - PDF_MARGIN, signatureY);
   pdf.text("Signature of Client", PDF_MARGIN, signatureY + 13);
   pdf.text("Signature of Coordinator", PDF_MARGIN + signatureWidth + signatureGap, signatureY + 13);
-  pdf.text("Prioti Taher", PDF_MARGIN + signatureWidth + signatureGap, signatureY + 25);
+  if (details.coordinatorName) pdf.text(details.coordinatorName, PDF_MARGIN + signatureWidth + signatureGap, signatureY + 25);
   layout.y = signatureY + 35;
   drawParagraph("DRAFT FOR REVIEW - NOT A SIGNED CONTRACT", {
     x: PDF_MARGIN,
@@ -1318,6 +1339,48 @@ function renderContract(client, state) {
     ${renderSavedPreview(state, "contract", client)}`;
 }
 
+function contractDetailsFor(draft) {
+  const saved = draft?.contractDetails;
+  if (!saved || typeof saved !== "object") return { ...LEGACY_CONTRACT_DETAILS };
+  const details = {};
+  Object.keys(LEGACY_CONTRACT_DETAILS).forEach((key) => {
+    details[key] = typeof saved[key] === "string" ? saved[key] : "";
+  });
+  return details;
+}
+
+function isMissingTableError(error) {
+  return error?.code === "42P01" || error?.code === "PGRST205" || /relation .* does not exist|could not find the table/i.test(error?.message || "");
+}
+
+async function loadContractSettings() {
+  const { data, error } = await supabaseClient
+    .from("portal_settings")
+    .select("contract")
+    .eq("id", 1)
+    .maybeSingle();
+  contractSettingsAvailable = !(error && isMissingTableError(error));
+  contractSettings = { ...DEFAULT_CONTRACT_SETTINGS };
+  if (!error && data?.contract && typeof data.contract === "object") {
+    CONTRACT_SETTING_FIELDS.forEach((key) => {
+      if (typeof data.contract[key] === "string") contractSettings[key] = data.contract[key];
+    });
+  }
+  renderContractSettingsForm();
+}
+
+function renderContractSettingsForm() {
+  const form = document.querySelector("#contract-settings-form");
+  CONTRACT_SETTING_FIELDS.forEach((key) => {
+    form.elements.namedItem(key).value = contractSettings[key];
+  });
+  form.querySelector("fieldset").disabled = !contractSettingsAvailable;
+  form.querySelector('button[type="submit"]').disabled = !contractSettingsAvailable;
+  form.querySelector(".portal-form-status").textContent = contractSettingsAvailable
+    ? ""
+    : `Saving contract details needs a one-time database update. Run ${PORTAL_SETTINGS_MIGRATION} in the Supabase SQL Editor, then reload the portal.`;
+}
+
 function renderSavedPreview(state, type, client) {
   if (!state.savedDraft) return "";
   if (type === "itinerary") {
@@ -1370,6 +1433,7 @@ function renderSavedPreview(state, type, client) {
     </section>`;
   }
   const amounts = calculateContractAmounts(draft.totalFee, draft.depositPercentage);
+  const details = contractDetailsFor(draft);
   const dates = draft.eventDates || (draft.date ? `Wedding Day | ${formatDate(draft.date)}` : "");
   const location = draft.eventLocation || draft.venue || "";
   return `<div class="portal-contract-output">
@@ -1392,9 +1456,9 @@ function renderSavedPreview(state, type, client) {
       </div>
       <div class="portal-contract-fees">
         <p><strong>Total Fee for Services:</strong> ${escapeHtml(formatCurrency(amounts?.total))} incl. Travel Fees</p>
-        <p><strong>Non-Refundable Deposit Due Upon Execution of Contract:</strong> ${escapeHtml(formatPercentage(draft.depositPercentage))}% (${escapeHtml(formatCurrency(amounts?.deposit))}) via Zelle<br />(929) 240-2040</p>
-        <p><strong>Balance:</strong> ${escapeHtml(formatCurrency(amounts?.balance))} due by ${escapeHtml(dates || "the event date")} via Cash</p>
-        <p><strong>Balance Due Date:</strong> Day of Event (Cash/Check/Zelle)</p>
+        <p><strong>Non-Refundable Deposit Due Upon Execution of Contract:</strong> ${escapeHtml(formatPercentage(draft.depositPercentage))}% (${escapeHtml(formatCurrency(amounts?.deposit))}) via ${escapeHtml(details.depositPayment)}</p>
+        <p><strong>Balance:</strong> ${escapeHtml(formatCurrency(amounts?.balance))} due by ${escapeHtml(dates || "the event date")} via ${escapeHtml(details.balancePayment)}</p>
+        <p><strong>Balance Due Date:</strong> Day of Event (${escapeHtml(details.balanceDueMethods)})</p>
       </div>
       <section class="portal-contract-section">
         <h5>Day of Coordination Services</h5>
@@ -1407,10 +1471,10 @@ function renderSavedPreview(state, type, client) {
       <section class="portal-contract-section portal-contract-photo-term">
         <p>Client Authorizes posting photos/videos on social media and publication to magazines and websites.</p>
       </section>
-      <p class="portal-contract-contact">Any Additional inquiries or questions, please feel free to reach out at<br /><strong>sabrplanco@gmail.com · (929) 240-2040</strong></p>
+      <p class="portal-contract-contact">Any Additional inquiries or questions, please feel free to reach out at<br /><strong>${escapeHtml([details.contactEmail, details.contactPhone].filter(Boolean).join(" · "))}</strong></p>
       <div class="portal-contract-signatures">
         <div><span></span><strong>Signature of Client</strong></div>
-        <div><span></span><strong>Signature of Coordinator</strong><small>Prioti Taher</small></div>
+        <div><span></span><strong>Signature of Coordinator</strong>${details.coordinatorName ? `<small>${escapeHtml(details.coordinatorName)}</small>` : ""}</div>
       </div>
       <footer class="portal-contract-draft-note">DRAFT FOR REVIEW · NOT A SIGNED CONTRACT</footer>
     </section>
@@ -1746,7 +1810,7 @@ async function authorizePortalUser(user) {
     throw new Error("This account is not approved to access the coordinator portal.");
   }
 
-  await loadPortalData();
+  await Promise.all([loadPortalData(), loadContractSettings()]);
   showSignedInPortal(user);
   if (clientDetailsAvailable) hidePortalNotice();
   else {
@@ -2799,6 +2863,11 @@ documentPanel.addEventListener("submit", async (event) => {
       eventLocation: formData.get("event-location").toString().trim(),
       totalFee: Number(totalFee),
       depositPercentage: Number(depositPercentage),
+      // Snapshot the current settings so this contract keeps them if settings change later.
+      contractDetails: {
+        ...contractSettings,
+        balanceDueMethods: contractSettings.balancePayment,
+      },
     };
   }
   const submitButton = form.querySelector('button[type="submit"]');
@@ -3125,4 +3194,31 @@ window.addEventListener("beforeunload", () => {
       if (state.uploadUrl) URL.revokeObjectURL(state.uploadUrl);
     });
   });
+});
+
+document.querySelector("#contract-settings-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const status = form.querySelector(".portal-form-status");
+  const submitButton = form.querySelector('button[type="submit"]');
+  const values = {};
+  CONTRACT_SETTING_FIELDS.forEach((key) => {
+    values[key] = form.elements.namedItem(key).value.trim();
+  });
+  submitButton.disabled = true;
+  status.textContent = "Saving…";
+  try {
+    const { error } = await supabaseClient
+      .from("portal_settings")
+      .upsert({ id: 1, contract: values });
+    if (error) throw new Error(`Contract details could not be saved: ${error.message}`);
+    contractSettings = values;
+    status.textContent = "Saved. New contracts will use these details.";
+    setPortalNotice("Contract details saved. Contracts you save from now on will use them.");
+  } catch (error) {
+    status.textContent = error.message || "Unable to save contract details.";
+    setPortalNotice(status.textContent, true);
+  } finally {
+    submitButton.disabled = false;
+  }
 });

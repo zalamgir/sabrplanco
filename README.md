@@ -32,6 +32,10 @@ The portal's browser-safe Supabase connection settings belong in `portal-config.
 
 Client workspaces can store optional email addresses (added one at a time with **Add email**, up to five), phone, guest count, and notes, and existing clients can be edited from their workspace with **Edit details**. Apply `supabase/migrations/20261111010000_client_contact_details.sql` once in the Supabase SQL Editor to add these columns. Until it is applied, the portal keeps working without the extra fields and shows a reminder after sign-in. A client's saved email and phone fill in automatically on a new contract, and their email fills in when sending a contract or itinerary.
 
+## Contract details settings
+
+Payment and contact details printed on contracts (deposit payment method, balance payment method, contact email and phone, and the coordinator name on the signature line) are set in the portal under **Settings → Contract details**. Apply `supabase/migrations/20261112010000_portal_settings.sql` once in the Supabase SQL Editor to enable saving them; until then the portal uses the built-in defaults. Each contract stores a copy of these details when it is saved, so changing settings later does not alter contracts already saved. Contracts saved before this feature keep their original wording.
+
 ## Client document email setup
 
 The portal sends a saved uploaded PDF or generated contract/itinerary PDF as an email attachment through Resend. Email forms let the admin add recipients one at a time (up to five) and remove them before sending. Itinerary emails can be sent to either the client or vendors, with the vendor message template automatically selected; contracts are sent to clients. The admin reviews the recipient list, subject, and message, confirms the send, and successful sends are recorded in `email_deliveries` and listed under **Email history** on each contract and itinerary. Messages are sent from the verified `RESEND_FROM_EMAIL` address, and replies are directed to `sabrplanco@gmail.com`. Sending requires the migration and Supabase Edge Function below; it will not work until a verified Resend sender and server-side secrets are configured.
