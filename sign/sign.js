@@ -59,36 +59,87 @@
   }
 
   // Contract preview --------------------------------------------------------
-  async function renderContract(url) {
-    const container = document.querySelector("#sign-document");
-    const pdfjs = window.pdfjsLib;
-    if (!pdfjs) {
-      container.innerHTML = `<p class="sign-muted">The contract preview couldn't load. <a href="${url}" target="_blank" rel="noopener">Open the contract PDF</a> to read it.</p>`;
+  // Pages are drawn to canvases. They start sharper than the screen needs, and when the
+  // reader pinch-zooms, the pages in view are redrawn at the zoomed resolution so text
+  // stays crisp. Pages out of view drop back to the base resolution to limit memory.
+  const MAX_CANVAS_PIXELS = 12_000_000; // stays under iPhone Safari's per-canvas limit
+  const pageViews = [];
+  let zoomTimer = null;
+
+  function baseQuality() {
+    return Math.min((window.devicePixelRatio || 1) * 1.5, 4);
+  }
+
+  async function drawPage(view, quality) {
+    const cssWidth = view.canvas.parentElement.clientWidth || 600;
+    const base = view.page.getViewport({ scale: 1 });
+    let scale = (cssWidth / base.width) * quality;
+    const area = base.width * base.height * scale * scale;
+    if (area > MAX_CANVAS_PIXELS) scale *= Math.sqrt(MAX_CANVAS_PIXELS / area);
+    if (Math.abs(scale - view.scale) / Math.max(view.scale, 0.01) < 0.1) return;
+    const viewport = view.page.getViewport({ scale });
+    // Draw off-screen, then swap in, so the page never flashes blank.
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.floor(viewport.width);
+    canvas.height = Math.floor(viewport.height);
+    view.task?.cancel();
+    view.task = view.page.render({ canvasContext: canvas.getContext("2d"), viewport });
+    try {
+      await view.task.promise;
+    } catch {
       return;
     }
+    view.canvas.width = canvas.width;
+    view.canvas.height = canvas.height;
+    view.canvas.getContext("2d").drawImage(canvas, 0, 0);
+    canvas.width = 0;
+    canvas.height = 0;
+    view.scale = scale;
+  }
+
+  function pageIsVisible(canvas) {
+    const viewport = window.visualViewport;
+    const rect = canvas.getBoundingClientRect();
+    const top = viewport ? viewport.offsetTop : 0;
+    const height = viewport ? viewport.height : window.innerHeight;
+    return rect.bottom > top && rect.top < top + height;
+  }
+
+  function sharpenForZoom() {
+    const zoom = window.visualViewport?.scale || 1;
+    const zoomedQuality = Math.min((window.devicePixelRatio || 1) * zoom * 1.1, 10);
+    pageViews.forEach((view) => {
+      const visible = pageIsVisible(view.canvas);
+      drawPage(view, visible && zoom > 1.05 ? Math.max(zoomedQuality, baseQuality()) : baseQuality());
+    });
+  }
+
+  async function renderContract(url) {
+    const container = document.querySelector("#sign-document");
+    const openLink = `<a class="sign-open-pdf" href="${url}" target="_blank" rel="noopener">Open full-quality PDF</a>`;
+    const pdfjs = window.pdfjsLib;
+    if (!pdfjs) {
+      container.innerHTML = `<p class="sign-muted">The contract preview couldn't load. ${openLink} to read it.</p>`;
+      return;
+    }
+    container.insertAdjacentHTML("beforeend", openLink);
     pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
     const pdf = await pdfjs.getDocument({ url, isEvalSupported: false }).promise;
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
     for (let number = 1; number <= pdf.numPages; number += 1) {
-      const page = await pdf.getPage(number);
-      const width = container.clientWidth || 600;
-      const base = page.getViewport({ scale: 1 });
-      const viewport = page.getViewport({ scale: (width / base.width) * ratio });
-      const pageCanvas = document.createElement("canvas");
-      pageCanvas.width = viewport.width;
-      pageCanvas.height = viewport.height;
-      pageCanvas.className = "sign-page";
-      pageCanvas.setAttribute("aria-label", `Contract page ${number} of ${pdf.numPages}`);
-      container.append(pageCanvas);
-      await page.render({ canvasContext: pageCanvas.getContext("2d"), viewport }).promise;
+      const canvas = document.createElement("canvas");
+      canvas.className = "sign-page";
+      canvas.setAttribute("aria-label", `Contract page ${number} of ${pdf.numPages}`);
+      container.append(canvas);
+      const view = { page: await pdf.getPage(number), canvas, scale: 0, task: null };
+      pageViews.push(view);
+      await drawPage(view, baseQuality());
     }
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener";
-    link.className = "sign-open-pdf";
-    link.textContent = "Open the contract as a PDF";
-    container.append(link);
+    const scheduleSharpen = () => {
+      window.clearTimeout(zoomTimer);
+      zoomTimer = window.setTimeout(sharpenForZoom, 250);
+    };
+    window.visualViewport?.addEventListener("resize", scheduleSharpen);
+    window.visualViewport?.addEventListener("scroll", scheduleSharpen);
   }
 
   // Signature pad ------------------------------------------------------------

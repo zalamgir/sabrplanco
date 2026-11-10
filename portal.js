@@ -529,7 +529,8 @@ function drawItineraryPdf(state, client, scriptLogo) {
   const layout = createVectorPdfDocument("Sabr Plan Co. Wedding Day Itinerary");
   const { pdf, contentWidth, drawParagraph, drawSectionHeading, drawTableHeader, drawTableRow } = layout;
   drawPdfBrandHeader(pdf, scriptLogo);
-  layout.y = 146;
+  // Leave clear space between the header rule and the document title.
+  layout.y = 172;
 
   drawParagraph("WEDDING DAY ITINERARY", {
     x: PDF_MARGIN,
@@ -595,7 +596,8 @@ function drawContractPdf(state, scriptLogo, { forSignature = false, coordinatorS
   const location = draft.eventLocation || draft.venue || "";
 
   drawPdfBrandHeader(pdf, scriptLogo);
-  layout.y = 146;
+  // Leave clear space between the header rule and the document title.
+  layout.y = 172;
 
   drawParagraph("Wedding Coordination Services Agreement", {
     font: "times",
