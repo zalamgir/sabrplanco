@@ -5294,3 +5294,56 @@ body:has(.portal-app[data-theme="dark"]) .portal-pull-indicator {
 .sign-body [hidden] {
   display: none !important;
 }
+
+/* Coordinator signature pad (Settings) */
+.portal-coordinator-signature .portal-mode-tabs {
+  margin-bottom: 0.2rem;
+}
+
+.portal-signature-pad {
+  position: relative;
+}
+
+#coordinator-signature-canvas {
+  width: 100%;
+  height: 130px;
+  display: block;
+  border: 1px dashed #c5aa8b;
+  background: #fffefa;
+}
+
+#coordinator-signature-canvas.is-drawing {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.portal-signature-pad-hint {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 400;
+  text-align: center;
+  pointer-events: none;
+}
+
+.portal-signature-pad-clear {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  border: 1px solid var(--line);
+  padding: 0.25rem 0.55rem;
+  background: #fffcf7;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.56rem;
+}
+
+.portal-app[data-theme="dark"] #coordinator-signature-canvas {
+  border-color: #71583e;
+  background: #fffefa;
+}

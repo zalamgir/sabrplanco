@@ -88,6 +88,8 @@ const DEFAULT_CONTRACT_SETTINGS = Object.freeze({
   coordinatorName: "Prioti Taher",
   services: contractServices,
   cancellationTerms: contractCancellationTerms,
+  // Empty means "generate from the coordinator name"; otherwise a drawn PNG data URL.
+  coordinatorSignature: "",
 });
 const CONTRACT_SETTING_FIELDS = Object.keys(DEFAULT_CONTRACT_SETTINGS);
 const CONTRACT_LIST_FIELDS = ["services", "cancellationTerms"];
@@ -243,6 +245,9 @@ function revokePreviewUrl(url) {
 }
 
 const PDF_PAGE_WIDTH = 612;
+const PDF_PAGE_HEIGHT = 792;
+// Room above the signature lines for a signature image.
+const PDF_SIGNATURE_SPACE = 46;
 const PDF_MARGIN = 48;
 const PDF_CONTENT_BOTTOM = 738;
 const PDF_COLORS = {
@@ -576,7 +581,7 @@ function drawItineraryPdf(state, client, scriptLogo) {
   return pdf;
 }
 
-function drawContractPdf(state, scriptLogo, { forSignature = false } = {}) {
+function drawContractPdf(state, scriptLogo, { forSignature = false, coordinatorSignature = null } = {}) {
   const draft = state.savedDraft;
   const layout = createVectorPdfDocument("Sabr Plan Co. Wedding Coordination Agreement");
   const { pdf, drawParagraph, drawSectionHeading, drawDetail, drawBullet, addPageNumbers, ensureSpace } = layout;
@@ -644,19 +649,45 @@ function drawContractPdf(state, scriptLogo, { forSignature = false } = {}) {
     after: 8,
   });
 
-  ensureSpace(55);
+  ensureSpace(PDF_SIGNATURE_SPACE + 60);
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(8);
   pdf.setTextColor(...PDF_COLORS.ink);
   const signatureGap = 32;
   const signatureWidth = (PDF_PAGE_WIDTH - PDF_MARGIN * 2 - signatureGap) / 2;
-  const signatureY = layout.y + 8;
+  const signatureY = layout.y + PDF_SIGNATURE_SPACE + 8;
+  const coordinatorX = PDF_MARGIN + signatureWidth + signatureGap;
+  if (forSignature && coordinatorSignature) {
+    // Fit the coordinator's signature just above their line, keeping its proportions.
+    const image = pdf.getImageProperties(coordinatorSignature);
+    const maxHeight = PDF_SIGNATURE_SPACE - 6;
+    const scale = Math.min(signatureWidth / image.width, maxHeight / image.height);
+    pdf.addImage(coordinatorSignature, "PNG", coordinatorX, signatureY - 3 - image.height * scale, image.width * scale, image.height * scale);
+  }
+  if (forSignature) {
+    // Tell the signing function where the client's signature goes (PDF points, origin bottom-left).
+    pdf.setProperties({
+      title: "Sabr Plan Co. Wedding Coordination Agreement",
+      author: "Sabr Plan Co.",
+      subject: "Wedding coordination",
+      keywords: `sabr-signature:${JSON.stringify({
+        v: 1,
+        page: pdf.internal.getCurrentPageInfo().pageNumber - 1,
+        x: PDF_MARGIN,
+        y: PDF_PAGE_HEIGHT - signatureY + 3,
+        width: signatureWidth,
+        height: PDF_SIGNATURE_SPACE - 6,
+        nameY: PDF_PAGE_HEIGHT - (signatureY + 25),
+        coordinatorName: details.coordinatorName || "",
+      })}`,
+    });
+  }
   pdf.setDrawColor(...PDF_COLORS.muted);
   pdf.line(PDF_MARGIN, signatureY, PDF_MARGIN + signatureWidth, signatureY);
   pdf.line(PDF_MARGIN + signatureWidth + signatureGap, signatureY, PDF_PAGE_WIDTH - PDF_MARGIN, signatureY);
   pdf.text("Signature of Client", PDF_MARGIN, signatureY + 13);
-  pdf.text("Signature of Coordinator", PDF_MARGIN + signatureWidth + signatureGap, signatureY + 13);
-  if (details.coordinatorName) pdf.text(details.coordinatorName, PDF_MARGIN + signatureWidth + signatureGap, signatureY + 25);
+  pdf.text("Signature of Coordinator", coordinatorX, signatureY + 13);
+  if (details.coordinatorName) pdf.text(details.coordinatorName, coordinatorX, signatureY + 25);
   layout.y = signatureY + 35;
   if (!forSignature) {
     drawParagraph("DRAFT FOR REVIEW - NOT A SIGNED CONTRACT", {
@@ -1434,6 +1465,7 @@ function renderContractSettingsForm() {
   });
   form.querySelector("fieldset").disabled = !contractSettingsAvailable;
   form.querySelector('button[type="submit"]').disabled = !contractSettingsAvailable;
+  setCoordinatorSignatureMode(contractSettings.coordinatorSignature ? "drawn" : "typed", contractSettings.coordinatorSignature);
   // Open the section when it needs attention, so the setup message isn't hidden.
   if (!contractSettingsAvailable) form.closest("details").open = true;
   form.querySelector(".portal-form-status").textContent = contractSettingsAvailable
@@ -2953,7 +2985,7 @@ documentPanel.addEventListener("submit", async (event) => {
       depositPercentage: Number(depositPercentage),
       // Snapshot the current settings so this contract keeps them if settings change later.
       contractDetails: {
-        ...contractSettings,
+        ...Object.fromEntries(Object.entries(contractSettings).filter(([key]) => key !== "coordinatorSignature")),
         balanceDueMethods: contractSettings.balancePayment,
         servicesHeading: CONTRACT_SERVICE_HEADINGS[client.serviceValue] || LEGACY_CONTRACT_DETAILS.servicesHeading,
       },
@@ -3310,6 +3342,12 @@ document.querySelector("#contract-settings-form").addEventListener("submit", asy
   const form = event.currentTarget;
   const status = form.querySelector(".portal-form-status");
   const submitButton = form.querySelector('button[type="submit"]');
+  const signatureValue = coordinatorSignatureValue();
+  if (signatureValue === null) {
+    status.textContent = "Draw your signature in the box, or choose Use typed name.";
+    return;
+  }
+  form.elements.namedItem("coordinatorSignature").value = signatureValue;
   const values = {};
   CONTRACT_SETTING_FIELDS.forEach((key) => {
     const text = form.elements.namedItem(key).value.trim();
@@ -3781,7 +3819,10 @@ documentPanel.addEventListener("submit", async (event) => {
   status.textContent = "Preparing the contract and sending the signing link…";
   try {
     const state = getDocumentState(client.id, "contract");
-    const { blob } = await createEmailPdfAttachment("contract", state, client, form.dataset.signatureSource, { forSignature: true });
+    const coordinatorSignature = form.dataset.signatureSource === "generated"
+      ? await coordinatorSignatureImage(contractDetailsFor(state.savedDraft).coordinatorName)
+      : null;
+    const { blob } = await createEmailPdfAttachment("contract", state, client, form.dataset.signatureSource, { forSignature: true, coordinatorSignature });
     if (blob.size > 15 * 1024 * 1024) throw new Error("The contract PDF is larger than 15 MB.");
     const subject = form.elements.namedItem("subject").value.trim();
     const data = await invokeSigningFunction({
@@ -3861,3 +3902,166 @@ documentPanel.addEventListener("click", async (event) => {
     }
   }
 });
+
+// Coordinator signature (Settings > Contract details) ---------------------------
+
+const coordinatorCanvas = document.querySelector("#coordinator-signature-canvas");
+const coordinatorContext = coordinatorCanvas.getContext("2d");
+const coordinatorHint = document.querySelector("#coordinator-signature-hint");
+const coordinatorClear = document.querySelector("#coordinator-signature-clear");
+const SIGNATURE_INK = "#3b261b";
+let coordinatorSignatureMode = "typed";
+let coordinatorHasDrawing = false;
+
+async function renderNameSignature(name, width = 600, height = 150) {
+  await document.fonts?.load('48px "Great Vibes"').catch(() => {});
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  let size = 96;
+  do {
+    context.font = `${size}px "Great Vibes", cursive`;
+    size -= 4;
+  } while (context.measureText(name).width > width - 40 && size > 24);
+  context.fillStyle = SIGNATURE_INK;
+  context.textBaseline = "middle";
+  context.fillText(name, 20, height / 2);
+  return canvas;
+}
+
+function trimmedSignatureDataUrl(canvas) {
+  const context = canvas.getContext("2d");
+  const { width, height } = canvas;
+  const pixels = context.getImageData(0, 0, width, height).data;
+  let minX = width, minY = height, maxX = -1, maxY = -1;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (pixels[(y * width + x) * 4 + 3] > 10) {
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+      }
+    }
+  }
+  if (maxX < 0) return "";
+  const pad = 8;
+  const x = Math.max(0, minX - pad);
+  const y = Math.max(0, minY - pad);
+  const w = Math.min(width, maxX + pad) - x;
+  const h = Math.min(height, maxY + pad) - y;
+  const output = document.createElement("canvas");
+  output.width = w;
+  output.height = h;
+  output.getContext("2d").drawImage(canvas, x, y, w, h, 0, 0, w, h);
+  return output.toDataURL("image/png");
+}
+
+// The coordinator signature added to contracts sent for signature.
+async function coordinatorSignatureImage(coordinatorName) {
+  if (contractSettings.coordinatorSignature?.startsWith("data:image/png;base64,")) return contractSettings.coordinatorSignature;
+  if (!coordinatorName) return null;
+  return trimmedSignatureDataUrl(await renderNameSignature(coordinatorName));
+}
+
+function sizeCoordinatorCanvas() {
+  const ratio = window.devicePixelRatio || 1;
+  const width = coordinatorCanvas.clientWidth;
+  const height = coordinatorCanvas.clientHeight;
+  if (!width || !height) return false;
+  coordinatorCanvas.width = width * ratio;
+  coordinatorCanvas.height = height * ratio;
+  coordinatorContext.setTransform(ratio, 0, 0, ratio, 0, 0);
+  coordinatorContext.lineCap = "round";
+  coordinatorContext.lineJoin = "round";
+  coordinatorContext.lineWidth = 2.4;
+  coordinatorContext.strokeStyle = SIGNATURE_INK;
+  return true;
+}
+
+async function drawCoordinatorPreview(savedImage = "") {
+  if (!sizeCoordinatorCanvas()) return;
+  const width = coordinatorCanvas.clientWidth;
+  const height = coordinatorCanvas.clientHeight;
+  coordinatorContext.clearRect(0, 0, width, height);
+  coordinatorHasDrawing = false;
+  if (coordinatorSignatureMode === "typed") {
+    const name = document.querySelector('#contract-settings-form [name="coordinatorName"]').value.trim();
+    coordinatorHint.hidden = Boolean(name);
+    coordinatorHint.textContent = "Enter the coordinator name above to create a signature.";
+    if (!name) return;
+    const rendered = await renderNameSignature(name, width * 2, height * 2);
+    coordinatorContext.drawImage(rendered, 0, 0, width, height);
+    return;
+  }
+  coordinatorHint.textContent = "Draw your signature here with your finger or mouse.";
+  if (savedImage) {
+    const image = new Image();
+    image.src = savedImage;
+    await image.decode().catch(() => {});
+    const scale = Math.min((width - 20) / image.width, (height - 20) / image.height, 1);
+    coordinatorContext.drawImage(image, 10, (height - image.height * scale) / 2, image.width * scale, image.height * scale);
+    coordinatorHasDrawing = true;
+  }
+  coordinatorHint.hidden = coordinatorHasDrawing;
+}
+
+function setCoordinatorSignatureMode(mode, savedImage = "") {
+  coordinatorSignatureMode = mode;
+  document.querySelectorAll("[data-coordinator-signature]").forEach((button) => {
+    const active = button.dataset.coordinatorSignature === mode;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  coordinatorClear.hidden = mode !== "drawn";
+  coordinatorCanvas.classList.toggle("is-drawing", mode === "drawn");
+  drawCoordinatorPreview(savedImage);
+}
+
+// "" = generate from the typed name, a data URL = drawn, null = drawn mode with nothing drawn.
+function coordinatorSignatureValue() {
+  if (coordinatorSignatureMode === "typed") return "";
+  if (!coordinatorHasDrawing) return null;
+  return trimmedSignatureDataUrl(coordinatorCanvas) || null;
+}
+
+document.querySelectorAll("[data-coordinator-signature]").forEach((button) => {
+  button.addEventListener("click", () => {
+    setCoordinatorSignatureMode(button.dataset.coordinatorSignature);
+    portalHasUnsavedEdits = true;
+  });
+});
+coordinatorClear.addEventListener("click", () => {
+  drawCoordinatorPreview();
+  portalHasUnsavedEdits = true;
+});
+document.querySelector('#contract-settings-form [name="coordinatorName"]').addEventListener("input", () => {
+  if (coordinatorSignatureMode === "typed") drawCoordinatorPreview();
+});
+// The canvas has no size while its settings section is collapsed, so draw when it opens.
+document.querySelector(".portal-contract-settings details").addEventListener("toggle", (event) => {
+  if (event.target.open) {
+    drawCoordinatorPreview(coordinatorSignatureMode === "drawn" ? contractSettings.coordinatorSignature : "");
+  }
+});
+
+let coordinatorPointer = null;
+coordinatorCanvas.addEventListener("pointerdown", (event) => {
+  if (coordinatorSignatureMode !== "drawn") return;
+  coordinatorPointer = event.pointerId;
+  coordinatorCanvas.setPointerCapture(event.pointerId);
+  const rect = coordinatorCanvas.getBoundingClientRect();
+  coordinatorContext.beginPath();
+  coordinatorContext.moveTo(event.clientX - rect.left, event.clientY - rect.top);
+  coordinatorHint.hidden = true;
+});
+coordinatorCanvas.addEventListener("pointermove", (event) => {
+  if (event.pointerId !== coordinatorPointer) return;
+  const rect = coordinatorCanvas.getBoundingClientRect();
+  coordinatorContext.lineTo(event.clientX - rect.left, event.clientY - rect.top);
+  coordinatorContext.stroke();
+  coordinatorHasDrawing = true;
+  portalHasUnsavedEdits = true;
+});
+["pointerup", "pointercancel"].forEach((type) => coordinatorCanvas.addEventListener(type, () => {
+  coordinatorPointer = null;
+}));
