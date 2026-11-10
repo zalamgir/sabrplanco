@@ -16,13 +16,13 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="../styles.css?v=20261110d" />
-    <script src="../portal-config.js?v=20261110d"></script>
+    <link rel="stylesheet" href="../styles.css?v=20261110e" />
+    <script src="../portal-config.js?v=20261110e"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    <script src="../portal.js?v=20261110d" defer></script>
-    <script src="pwa.js?v=20261110d" defer></script>
+    <script src="../portal.js?v=20261110e" defer></script>
+    <script src="pwa.js?v=20261110e" defer></script>
   </head>
   <body class="portal-body">
     <main class="portal-shell" id="main">
@@ -275,20 +275,20 @@
               Couple or client name
               <input name="name" type="text" placeholder="e.g. Alex + Jamie" required />
             </label>
-            <div class="portal-dialog-field">
+            <div class="portal-date-field" id="client-date-field" data-date-field data-exclude-client="">
               <span class="portal-field-label" id="client-date-label">Wedding date</span>
-              <input type="hidden" name="date" id="client-date-value" />
-              <button type="button" class="portal-date-trigger" id="client-date-trigger" aria-expanded="false" aria-controls="client-date-picker" aria-labelledby="client-date-label client-date-text">
-                <span id="client-date-text">Select a date</span>
+              <input type="hidden" name="date" id="client-date-value" data-date-value />
+              <button type="button" class="portal-date-trigger" id="client-date-trigger" data-date-trigger aria-expanded="false" aria-controls="client-date-picker" aria-labelledby="client-date-label client-date-text">
+                <span id="client-date-text" data-date-text>Select a date</span>
                 <span class="portal-date-trigger-icon" aria-hidden="true">▦</span>
               </button>
-              <div class="portal-date-picker" id="client-date-picker" hidden>
+              <div class="portal-date-picker" id="client-date-picker" data-date-picker hidden>
                 <div class="portal-date-picker-head">
                   <div class="portal-date-picker-steps">
                     <button type="button" class="portal-date-step" data-picker-step="-12" aria-label="Previous year">«</button>
                     <button type="button" class="portal-date-step" data-picker-step="-1" aria-label="Previous month">‹</button>
                   </div>
-                  <strong id="client-date-month" aria-live="polite"></strong>
+                  <strong id="client-date-month" data-date-month aria-live="polite"></strong>
                   <div class="portal-date-picker-steps">
                     <button type="button" class="portal-date-step" data-picker-step="1" aria-label="Next month">›</button>
                     <button type="button" class="portal-date-step" data-picker-step="12" aria-label="Next year">»</button>
@@ -297,7 +297,7 @@
                 <div class="portal-date-picker-weekdays" aria-hidden="true">
                   <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
                 </div>
-                <div class="portal-date-picker-grid" id="client-date-grid"></div>
+                <div class="portal-date-picker-grid" id="client-date-grid" data-date-grid></div>
                 <p class="portal-date-picker-legend"><span aria-hidden="true"></span> Another wedding already booked</p>
               </div>
             </div>

@@ -1241,7 +1241,7 @@ function renderItinerary(client, state) {
     <div class="portal-ai-divider"><span>Or build the timeline manually</span></div>
     <form class="portal-template-form" data-template-form="itinerary">
       <div class="portal-form-grid">
-        <label>Wedding date<input name="date" type="date" value="${escapeHtml(state.eventDate || state.savedDraft?.date || client.date)}" /></label>
+        ${renderDatePickerField({ id: "itinerary-date", label: "Wedding date", name: "date", value: state.eventDate || state.savedDraft?.date || client.date, excludeClientId: client.id })}
         <label>Venue<input name="venue" type="text" value="${escapeHtml(state.eventVenue || state.savedDraft?.venue || client.venue || "")}" placeholder="Venue or location" /></label>
       </div>
       <div class="portal-template-subheading"><div><h4>Timeline</h4><p>Separate the pre-event schedule from the wedding-day event. Add vendor assignments and useful coordination notes.</p></div><button type="button" class="portal-text-button" data-action="add-event">+ Add event</button></div>
@@ -2833,65 +2833,116 @@ documentPanel.addEventListener("submit", async (event) => {
   setPortalNotice("The document draft was saved to Supabase.");
 });
 
-const clientDateValue = document.querySelector("#client-date-value");
-const clientDateTrigger = document.querySelector("#client-date-trigger");
-const clientDatePicker = document.querySelector("#client-date-picker");
-let datePickerMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+// Site-styled date picker. Each field is a [data-date-field] wrapper holding a hidden
+// input (so forms read it like a normal date input), a trigger button, and a calendar.
+const DATE_FIELD_LABEL_OPTIONS = { weekday: "long", month: "long", day: "numeric", year: "numeric" };
 
-function setClientDate(value) {
-  clientDateValue.value = value;
-  document.querySelector("#client-date-text").textContent = value
-    ? formatDate(value, { weekday: "long", month: "long", day: "numeric", year: "numeric" })
-    : "Select a date";
-  clientDateTrigger.classList.toggle("has-value", Boolean(value));
-  if (value) {
-    const [year, month] = value.split("-").map(Number);
-    datePickerMonth = new Date(year, month - 1, 1);
-  }
+function renderDatePickerField({ id, label, name, value = "", excludeClientId = "" }) {
+  const hasValue = Boolean(value);
+  return `<div class="portal-date-field" data-date-field data-exclude-client="${escapeHtml(excludeClientId)}">
+    <span class="portal-field-label" id="${id}-label">${escapeHtml(label)}</span>
+    <input type="hidden" name="${name}" value="${escapeHtml(value)}" data-date-value />
+    <button type="button" class="portal-date-trigger${hasValue ? " has-value" : ""}" data-date-trigger aria-expanded="false" aria-controls="${id}-picker" aria-labelledby="${id}-label ${id}-text">
+      <span id="${id}-text" data-date-text>${escapeHtml(hasValue ? formatDate(value, DATE_FIELD_LABEL_OPTIONS) : "Select a date")}</span>
+      <span class="portal-date-trigger-icon" aria-hidden="true">▦</span>
+    </button>
+    <div class="portal-date-picker" id="${id}-picker" data-date-picker hidden>
+      <div class="portal-date-picker-head">
+        <div class="portal-date-picker-steps">
+          <button type="button" class="portal-date-step" data-picker-step="-12" aria-label="Previous year">«</button>
+          <button type="button" class="portal-date-step" data-picker-step="-1" aria-label="Previous month">‹</button>
+        </div>
+        <strong data-date-month aria-live="polite"></strong>
+        <div class="portal-date-picker-steps">
+          <button type="button" class="portal-date-step" data-picker-step="1" aria-label="Next month">›</button>
+          <button type="button" class="portal-date-step" data-picker-step="12" aria-label="Next year">»</button>
+        </div>
+      </div>
+      <div class="portal-date-picker-weekdays" aria-hidden="true">
+        <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+      </div>
+      <div class="portal-date-picker-grid" data-date-grid></div>
+      <p class="portal-date-picker-legend"><span aria-hidden="true"></span> Another wedding already booked</p>
+    </div>
+  </div>`;
 }
 
-function toggleDatePicker(open) {
-  clientDatePicker.hidden = !open;
-  clientDateTrigger.setAttribute("aria-expanded", String(open));
-  if (open) renderDatePicker();
+function dateFieldMonth(field) {
+  const [year, month] = (field.dataset.month || toDateKey(today)).split("-").map(Number);
+  return new Date(year, month - 1, 1);
 }
 
-function renderDatePicker() {
-  const year = datePickerMonth.getFullYear();
-  const month = datePickerMonth.getMonth();
-  document.querySelector("#client-date-month").textContent =
-    datePickerMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const bookedDates = new Set(clients.filter((client) => client.id !== editingClientId).map((client) => client.date));
+function setDateFieldValue(field, value) {
+  field.querySelector("[data-date-value]").value = value;
+  field.querySelector("[data-date-text]").textContent = value ? formatDate(value, DATE_FIELD_LABEL_OPTIONS) : "Select a date";
+  field.querySelector("[data-date-trigger]").classList.toggle("has-value", Boolean(value));
+  if (value) field.dataset.month = value.slice(0, 7);
+}
+
+function toggleDateField(field, open) {
+  field.querySelector("[data-date-picker]").hidden = !open;
+  field.querySelector("[data-date-trigger]").setAttribute("aria-expanded", String(open));
+  if (!open) return;
+  // Open on the selected month, or the current month when nothing is chosen yet.
+  const value = field.querySelector("[data-date-value]").value;
+  field.dataset.month = (value || toDateKey(today)).slice(0, 7);
+  renderDateField(field);
+}
+
+function renderDateField(field) {
+  const monthStart = dateFieldMonth(field);
+  const year = monthStart.getFullYear();
+  const month = monthStart.getMonth();
+  const value = field.querySelector("[data-date-value]").value;
+  field.querySelector("[data-date-month]").textContent =
+    monthStart.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const excludeClientId = field.dataset.excludeClient;
+  const bookedDates = new Set(clients.filter((client) => client.id !== excludeClientId).map((client) => client.date));
   const todayKey = toDateKey(today);
   const cells = [];
   for (let blank = 0; blank < new Date(year, month, 1).getDay(); blank += 1) cells.push("<span></span>");
   for (let day = 1; day <= new Date(year, month + 1, 0).getDate(); day += 1) {
     const dateKey = toDateKey(new Date(year, month, day));
-    const selected = dateKey === clientDateValue.value;
+    const selected = dateKey === value;
     const booked = bookedDates.has(dateKey);
     const classes = ["portal-date-day", selected && "is-selected", dateKey === todayKey && "is-today", booked && "is-booked"]
       .filter(Boolean).join(" ");
-    const label = formatDate(dateKey, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    const label = formatDate(dateKey, DATE_FIELD_LABEL_OPTIONS);
     cells.push(`<button type="button" class="${classes}" data-pick-date="${dateKey}" aria-pressed="${selected}" aria-label="${escapeHtml(label)}${booked ? ", another wedding booked" : ""}">${day}</button>`);
   }
-  document.querySelector("#client-date-grid").innerHTML = cells.join("");
+  field.querySelector("[data-date-grid]").innerHTML = cells.join("");
 }
 
-clientDateTrigger.addEventListener("click", () => toggleDatePicker(clientDatePicker.hidden));
-
-clientDatePicker.addEventListener("click", (event) => {
+document.addEventListener("click", (event) => {
+  const field = event.target.closest("[data-date-field]");
+  if (!field) return;
+  if (event.target.closest("[data-date-trigger]")) {
+    toggleDateField(field, field.querySelector("[data-date-picker]").hidden);
+    return;
+  }
   const stepButton = event.target.closest("[data-picker-step]");
   if (stepButton) {
-    datePickerMonth = new Date(datePickerMonth.getFullYear(), datePickerMonth.getMonth() + Number(stepButton.dataset.pickerStep), 1);
-    renderDatePicker();
+    const monthStart = dateFieldMonth(field);
+    field.dataset.month = toDateKey(new Date(monthStart.getFullYear(), monthStart.getMonth() + Number(stepButton.dataset.pickerStep), 1)).slice(0, 7);
+    renderDateField(field);
     return;
   }
   const dayButton = event.target.closest("[data-pick-date]");
   if (!dayButton) return;
-  setClientDate(dayButton.dataset.pickDate);
+  setDateFieldValue(field, dayButton.dataset.pickDate);
+  toggleDateField(field, false);
+  field.querySelector("[data-date-trigger]").focus();
+  field.dispatchEvent(new CustomEvent("datechange", { bubbles: true }));
+});
+
+const clientDateField = document.querySelector("#client-date-field");
+
+function setClientDate(value) {
+  setDateFieldValue(clientDateField, value);
+}
+
+clientDateField.addEventListener("datechange", () => {
   clientStatus.textContent = "";
-  toggleDatePicker(false);
-  clientDateTrigger.focus();
 });
 
 const MAX_CLIENT_EMAILS = 5;
@@ -2948,9 +2999,9 @@ clientEmailList.addEventListener("click", (event) => {
 function openClientDialog(client = null) {
   editingClientId = client?.id || null;
   clientForm.reset();
-  datePickerMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  clientDateField.dataset.excludeClient = client?.id || "";
   setClientDate(client?.date || "");
-  toggleDatePicker(false);
+  toggleDateField(clientDateField, false);
   setClientEmails(parseEmailRecipients(client?.email || ""));
   clientStatus.textContent = "";
   document.querySelector("#client-dialog-eyebrow").textContent = client ? "CLIENT DETAILS" : "NEW WORKSPACE";
@@ -3009,10 +3060,10 @@ clientForm.addEventListener("submit", async (event) => {
   const clientId = editingClientId;
   clientStatus.classList.remove("is-success");
   clientStatus.textContent = "";
-  if (!clientDateValue.value) {
+  if (!formData.get("date")) {
     clientStatus.textContent = "Choose a wedding date.";
-    toggleDatePicker(true);
-    clientDateTrigger.focus();
+    toggleDateField(clientDateField, true);
+    clientDateField.querySelector("[data-date-trigger]").focus();
     return;
   }
   // Save an address that was typed but not added with the button.

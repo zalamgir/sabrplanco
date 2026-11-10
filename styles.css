@@ -4642,3 +4642,14 @@ h2 em,
   display: grid;
   gap: 0.35rem;
 }
+
+.portal-date-field {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  align-content: start;
+}
+
+.portal-form-grid {
+  align-items: start;
+}
