@@ -4882,3 +4882,9 @@ h2 em,
     grid-template-columns: 1fr;
   }
 }
+
+.portal-inquiry-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-basis: 1.2rem;
+}
