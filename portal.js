@@ -1029,7 +1029,17 @@ async function extractItineraryTextFromPdf(file) {
   }
 }
 
-async function renderPdfPage(state) {
+// PDF previews start sharper than the screen needs and are redrawn at the zoomed
+// resolution when the coordinator pinch-zooms, capped to stay under iPhone's canvas limit.
+const PDF_PREVIEW_MAX_PIXELS = 12_000_000;
+
+function pdfPreviewQuality() {
+  const ratio = window.devicePixelRatio || 1;
+  const zoom = window.visualViewport?.scale || 1;
+  return Math.min(Math.max(ratio * 1.5, ratio * zoom * 1.1), 10);
+}
+
+async function renderPdfPage(state, { quiet = false } = {}) {
   const canvas = documentPanel.querySelector("[data-pdf-canvas]");
   const status = documentPanel.querySelector("[data-pdf-status]");
   if (!canvas || !status) return;
@@ -1040,8 +1050,10 @@ async function renderPdfPage(state) {
   }
 
   const renderToken = ++state.pdfRenderToken;
-  status.hidden = false;
-  status.textContent = "Preparing document preview…";
+  if (!quiet) {
+    status.hidden = false;
+    status.textContent = "Preparing document preview…";
+  }
   try {
     pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
     const previousRenderTask = state.pdfRenderTask;
@@ -1070,20 +1082,30 @@ async function renderPdfPage(state) {
     const availableWidth = Math.max(canvas.parentElement.clientWidth - 48, 240);
     const scale = Math.min(availableWidth / viewport.width, 1.5);
     const scaledViewport = page.getViewport({ scale });
-    const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+    let outputScale = pdfPreviewQuality();
+    const area = scaledViewport.width * scaledViewport.height * outputScale * outputScale;
+    if (area > PDF_PREVIEW_MAX_PIXELS) outputScale *= Math.sqrt(PDF_PREVIEW_MAX_PIXELS / area);
 
-    canvas.width = Math.floor(scaledViewport.width * outputScale);
-    canvas.height = Math.floor(scaledViewport.height * outputScale);
-    canvas.style.width = `${Math.floor(scaledViewport.width)}px`;
-    canvas.style.height = `${Math.floor(scaledViewport.height)}px`;
+    // Draw off-screen and swap in, so redrawing for zoom never flashes a blank page.
+    const offscreen = document.createElement("canvas");
+    offscreen.width = Math.floor(scaledViewport.width * outputScale);
+    offscreen.height = Math.floor(scaledViewport.height * outputScale);
     state.pdfRenderTask?.cancel();
     state.pdfRenderTask = page.render({
-      canvasContext: canvas.getContext("2d"),
+      canvasContext: offscreen.getContext("2d"),
       viewport: scaledViewport,
-      transform: outputScale === 1 ? null : [outputScale, 0, 0, outputScale, 0, 0],
+      transform: [outputScale, 0, 0, outputScale, 0, 0],
     });
     await waitForPdfOperation(state.pdfRenderTask.promise);
     if (renderToken !== state.pdfRenderToken) return;
+    canvas.width = offscreen.width;
+    canvas.height = offscreen.height;
+    canvas.style.width = `${Math.floor(scaledViewport.width)}px`;
+    canvas.style.height = `${Math.floor(scaledViewport.height)}px`;
+    canvas.getContext("2d").drawImage(offscreen, 0, 0);
+    offscreen.width = 0;
+    offscreen.height = 0;
+    state.pdfRenderedScale = outputScale;
 
     status.hidden = true;
     documentPanel.querySelector("[data-pdf-current-page]").textContent = String(state.pdfPageNumber);
@@ -4064,3 +4086,17 @@ coordinatorCanvas.addEventListener("pointermove", (event) => {
 ["pointerup", "pointercancel"].forEach((type) => coordinatorCanvas.addEventListener(type, () => {
   coordinatorPointer = null;
 }));
+
+// Redraw the PDF preview sharply after a pinch-zoom settles.
+let pdfZoomTimer = null;
+window.visualViewport?.addEventListener("resize", () => {
+  window.clearTimeout(pdfZoomTimer);
+  pdfZoomTimer = window.setTimeout(() => {
+    if (!activeClientId || !documentPanel.querySelector("[data-pdf-canvas]")) return;
+    const state = getDocumentState(activeClientId, activeDocument);
+    if (!state.uploadUrl || !state.pdfDocument) return;
+    const wanted = pdfPreviewQuality();
+    const current = state.pdfRenderedScale || 0;
+    if (Math.abs(wanted - current) / Math.max(current, 0.01) > 0.15) renderPdfPage(state, { quiet: true });
+  }, 250);
+});
