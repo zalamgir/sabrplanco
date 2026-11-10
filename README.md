@@ -34,7 +34,7 @@ Client workspaces can store optional email addresses (added one at a time with *
 
 ## Contract details settings
 
-Payment and contact details printed on contracts (deposit payment method, balance payment method, contact email and phone, and the coordinator name on the signature line) are set in the portal under **Settings → Contract details**. Apply `supabase/migrations/20261112010000_portal_settings.sql` once in the Supabase SQL Editor to enable saving them; until then the portal uses the built-in defaults. Each contract stores a copy of these details when it is saved, so changing settings later does not alter contracts already saved. Contracts saved before this feature keep their original wording.
+Payment and contact details printed on contracts (deposit payment method, balance payment method, contact email and phone, and the coordinator name on the signature line), plus the services list and terms & cancellations, are set in the portal under **Settings → Contract details**. Apply `supabase/migrations/20261112010000_portal_settings.sql` once in the Supabase SQL Editor to enable saving them; until then the portal uses the built-in defaults. Each contract stores a copy of these details when it is saved, so changing settings later does not alter contracts already saved. Contracts saved before this feature keep their original wording.
 
 ## Client document email setup
 

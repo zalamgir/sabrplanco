@@ -16,13 +16,13 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="../styles.css?v=20261110h" />
-    <script src="../portal-config.js?v=20261110h"></script>
+    <link rel="stylesheet" href="../styles.css?v=20261110i" />
+    <script src="../portal-config.js?v=20261110i"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    <script src="../portal.js?v=20261110h" defer></script>
-    <script src="pwa.js?v=20261110h" defer></script>
+    <script src="../portal.js?v=20261110i" defer></script>
+    <script src="pwa.js?v=20261110i" defer></script>
   </head>
   <body class="portal-body">
     <main class="portal-shell" id="main">
@@ -161,6 +161,14 @@
                   </label>
                   <label>Coordinator name (signature line)
                     <input name="coordinatorName" type="text" maxlength="120" />
+                  </label>
+                  <label>Services included
+                    <textarea name="services" rows="10" maxlength="40000" required></textarea>
+                    <span class="portal-email-recipient-help">One service per line. Each line becomes a bullet point on the contract.</span>
+                  </label>
+                  <label>Terms &amp; cancellations
+                    <textarea name="cancellationTerms" rows="10" maxlength="40000" required></textarea>
+                    <span class="portal-email-recipient-help">Leave a blank line between terms. Each term becomes its own paragraph.</span>
                   </label>
                 </fieldset>
                 <div class="portal-form-actions">

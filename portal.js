@@ -72,6 +72,8 @@ const LEGACY_CONTRACT_DETAILS = Object.freeze({
   contactEmail: "sabrplanco@gmail.com",
   contactPhone: "(929) 240-2040",
   coordinatorName: "Prioti Taher",
+  services: contractServices,
+  cancellationTerms: contractCancellationTerms,
 });
 const DEFAULT_CONTRACT_SETTINGS = Object.freeze({
   depositPayment: "Zelle (929) 240-2040",
@@ -79,8 +81,13 @@ const DEFAULT_CONTRACT_SETTINGS = Object.freeze({
   contactEmail: "sabrplanco@gmail.com",
   contactPhone: "(929) 240-2040",
   coordinatorName: "Prioti Taher",
+  services: contractServices,
+  cancellationTerms: contractCancellationTerms,
 });
 const CONTRACT_SETTING_FIELDS = Object.keys(DEFAULT_CONTRACT_SETTINGS);
+const CONTRACT_LIST_FIELDS = ["services", "cancellationTerms"];
+const MAX_CONTRACT_LIST_ITEMS = 40;
+const MAX_CONTRACT_LIST_ITEM_LENGTH = 2000;
 const PORTAL_SETTINGS_MIGRATION = "supabase/migrations/20261112010000_portal_settings.sql";
 let contractSettings = { ...DEFAULT_CONTRACT_SETTINGS };
 let contractSettingsAvailable = true;
@@ -598,10 +605,10 @@ function drawContractPdf(state, scriptLogo) {
   drawDetail("Balance Due Date", `Day of Event (${details.balanceDueMethods})`);
 
   drawSectionHeading("Day of Coordination Services");
-  contractServices.forEach(drawBullet);
+  details.services.forEach(drawBullet);
 
   drawSectionHeading("Terms & Cancellations");
-  contractCancellationTerms.forEach((term) => drawParagraph(term, { size: 8.2, after: 7 }));
+  details.cancellationTerms.forEach((term) => drawParagraph(term, { size: 8.2, after: 7 }));
 
   drawSectionHeading("Photo & Video Authorization");
   drawParagraph(
@@ -1339,12 +1346,24 @@ function renderContract(client, state) {
     ${renderSavedPreview(state, "contract", client)}`;
 }
 
+function cleanContractList(value) {
+  return Array.isArray(value)
+    ? value.filter((item) => typeof item === "string" && item.trim()).map((item) => item.trim())
+    : [];
+}
+
 function contractDetailsFor(draft) {
   const saved = draft?.contractDetails;
   if (!saved || typeof saved !== "object") return { ...LEGACY_CONTRACT_DETAILS };
   const details = {};
   Object.keys(LEGACY_CONTRACT_DETAILS).forEach((key) => {
-    details[key] = typeof saved[key] === "string" ? saved[key] : "";
+    if (CONTRACT_LIST_FIELDS.includes(key)) {
+      // Contracts saved before services and terms were editable used the built-in wording.
+      const list = cleanContractList(saved[key]);
+      details[key] = list.length ? list : LEGACY_CONTRACT_DETAILS[key];
+    } else {
+      details[key] = typeof saved[key] === "string" ? saved[key] : "";
+    }
   });
   return details;
 }
@@ -1363,7 +1382,12 @@ async function loadContractSettings() {
   contractSettings = { ...DEFAULT_CONTRACT_SETTINGS };
   if (!error && data?.contract && typeof data.contract === "object") {
     CONTRACT_SETTING_FIELDS.forEach((key) => {
-      if (typeof data.contract[key] === "string") contractSettings[key] = data.contract[key];
+      if (CONTRACT_LIST_FIELDS.includes(key)) {
+        const list = cleanContractList(data.contract[key]);
+        if (list.length) contractSettings[key] = list;
+      } else if (typeof data.contract[key] === "string") {
+        contractSettings[key] = data.contract[key];
+      }
     });
   }
   renderContractSettingsForm();
@@ -1372,7 +1396,9 @@ async function loadContractSettings() {
 function renderContractSettingsForm() {
   const form = document.querySelector("#contract-settings-form");
   CONTRACT_SETTING_FIELDS.forEach((key) => {
-    form.elements.namedItem(key).value = contractSettings[key];
+    const value = contractSettings[key];
+    // Services are one per line; cancellation terms are paragraphs separated by a blank line.
+    form.elements.namedItem(key).value = Array.isArray(value) ? value.join(key === "services" ? "\n" : "\n\n") : value;
   });
   form.querySelector("fieldset").disabled = !contractSettingsAvailable;
   form.querySelector('button[type="submit"]').disabled = !contractSettingsAvailable;
@@ -1462,11 +1488,11 @@ function renderSavedPreview(state, type, client) {
       </div>
       <section class="portal-contract-section">
         <h5>Day of Coordination Services</h5>
-        <ul>${contractServices.map((service) => `<li>${escapeHtml(service)}</li>`).join("")}</ul>
+        <ul>${details.services.map((service) => `<li>${escapeHtml(service)}</li>`).join("")}</ul>
       </section>
       <section class="portal-contract-section">
         <h5>Terms &amp; Cancellations</h5>
-        ${contractCancellationTerms.map((term) => `<p>${escapeHtml(term)}</p>`).join("")}
+        ${details.cancellationTerms.map((term) => `<p>${escapeHtml(term)}</p>`).join("")}
       </section>
       <section class="portal-contract-section portal-contract-photo-term">
         <p>Client Authorizes posting photos/videos on social media and publication to magazines and websites.</p>
@@ -3203,8 +3229,22 @@ document.querySelector("#contract-settings-form").addEventListener("submit", asy
   const submitButton = form.querySelector('button[type="submit"]');
   const values = {};
   CONTRACT_SETTING_FIELDS.forEach((key) => {
-    values[key] = form.elements.namedItem(key).value.trim();
+    const text = form.elements.namedItem(key).value.trim();
+    if (key === "services") values[key] = text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+    else if (key === "cancellationTerms") values[key] = text.split(/\n\s*\n/).map((term) => term.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
+    else values[key] = text;
   });
+  for (const key of CONTRACT_LIST_FIELDS) {
+    const label = key === "services" ? "services" : "cancellation terms";
+    if (!values[key].length) {
+      status.textContent = `Add at least one item to the ${label}.`;
+      return;
+    }
+    if (values[key].length > MAX_CONTRACT_LIST_ITEMS || values[key].some((item) => item.length > MAX_CONTRACT_LIST_ITEM_LENGTH)) {
+      status.textContent = `The ${label} can have up to ${MAX_CONTRACT_LIST_ITEMS} items of up to ${MAX_CONTRACT_LIST_ITEM_LENGTH} characters each.`;
+      return;
+    }
+  }
   submitButton.disabled = true;
   status.textContent = "Saving…";
   try {
