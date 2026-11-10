@@ -4448,3 +4448,191 @@ h2 em,
 .portal-client-email-list:empty {
   display: none;
 }
+
+/* Wedding date picker in the add/edit client dialog */
+.portal-field-label {
+  color: var(--ink);
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+.portal-date-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border: 1px solid #ded5c9;
+  border-radius: 0;
+  padding: 0.65rem 0.7rem;
+  background: #fffefa;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.67rem;
+  text-align: left;
+}
+
+.portal-date-trigger.has-value {
+  color: var(--ink);
+}
+
+.portal-date-trigger:focus-visible,
+.portal-date-trigger[aria-expanded="true"] {
+  border-color: var(--rust);
+  outline: 2px solid rgba(150, 106, 77, 0.2);
+}
+
+.portal-date-trigger-icon {
+  color: var(--rust);
+}
+
+.portal-date-picker {
+  border: 1px solid var(--line);
+  padding: 0.9rem;
+  background: #fffcf7;
+}
+
+.portal-date-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.portal-date-picker-head strong {
+  color: var(--espresso);
+  font: 500 1rem var(--serif);
+  text-align: center;
+}
+
+.portal-date-picker-steps {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.portal-date-step {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.portal-date-step:hover {
+  border-color: var(--espresso);
+}
+
+.portal-date-picker-weekdays,
+.portal-date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.15rem;
+}
+
+.portal-date-picker-weekdays {
+  margin: 0.8rem 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.portal-date-day {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.66rem;
+}
+
+.portal-date-day:hover {
+  background: #f1e8dc;
+}
+
+.portal-date-day.is-today {
+  border-color: var(--rust);
+}
+
+.portal-date-day.is-booked::after,
+.portal-date-picker-legend span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--rust);
+  content: "";
+}
+
+.portal-date-day.is-booked::after {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.portal-date-day.is-selected {
+  border-color: var(--espresso);
+  background: var(--espresso);
+  color: #fffaf5;
+}
+
+.portal-date-day.is-selected::after {
+  background: #fffaf5;
+}
+
+.portal-date-picker-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+  font-size: 0.56rem;
+}
+
+.portal-date-picker-legend span {
+  display: inline-block;
+}
+
+.portal-app[data-theme="dark"] .portal-date-trigger {
+  border-color: #514438;
+  background: #211c17;
+}
+
+.portal-app[data-theme="dark"] .portal-date-trigger.has-value,
+.portal-app[data-theme="dark"] .portal-date-picker-head strong,
+.portal-app[data-theme="dark"] .portal-date-step,
+.portal-app[data-theme="dark"] .portal-date-day {
+  color: #f3ece3;
+}
+
+.portal-app[data-theme="dark"] .portal-date-picker,
+.portal-app[data-theme="dark"] .portal-date-step {
+  border-color: #40362d;
+  background: #29231d;
+}
+
+.portal-app[data-theme="dark"] .portal-date-day:hover {
+  background: #3a3027;
+}
+
+.portal-app[data-theme="dark"] .portal-date-day.is-selected {
+  border-color: #dfbd98;
+  background: #dfbd98;
+  color: #211c17;
+}
+
+.portal-app[data-theme="dark"] .portal-date-day.is-selected::after {
+  background: #211c17;
+}

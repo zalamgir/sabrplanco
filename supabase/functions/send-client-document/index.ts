@@ -141,7 +141,16 @@ Deno.serve(async (request) => {
   });
   const resendResult = await resendResponse.json().catch(() => ({}));
   if (!resendResponse.ok || typeof resendResult.id !== "string") {
-    return jsonResponse(502, { error: "The email provider could not send this message. Check the sender setup and try again." }, origin);
+    // Resend's error text (e.g. an unverified domain) is safe to show the admin and explains the fix.
+    const providerMessage = typeof resendResult.message === "string"
+      ? resendResult.message.replace(/\s+/g, " ").trim().slice(0, 300)
+      : "";
+    console.error("Resend rejected the email", resendResponse.status, resendResult);
+    return jsonResponse(502, {
+      error: providerMessage
+        ? `The email provider rejected this message: ${providerMessage}`
+        : "The email provider could not send this message. Check the sender setup and try again.",
+    }, origin);
   }
 
   const { error: logError } = await supabase.from("email_deliveries").insert({

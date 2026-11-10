@@ -2831,6 +2831,67 @@ documentPanel.addEventListener("submit", async (event) => {
   setPortalNotice("The document draft was saved to Supabase.");
 });
 
+const clientDateValue = document.querySelector("#client-date-value");
+const clientDateTrigger = document.querySelector("#client-date-trigger");
+const clientDatePicker = document.querySelector("#client-date-picker");
+let datePickerMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+function setClientDate(value) {
+  clientDateValue.value = value;
+  document.querySelector("#client-date-text").textContent = value
+    ? formatDate(value, { weekday: "long", month: "long", day: "numeric", year: "numeric" })
+    : "Select a date";
+  clientDateTrigger.classList.toggle("has-value", Boolean(value));
+  if (value) {
+    const [year, month] = value.split("-").map(Number);
+    datePickerMonth = new Date(year, month - 1, 1);
+  }
+}
+
+function toggleDatePicker(open) {
+  clientDatePicker.hidden = !open;
+  clientDateTrigger.setAttribute("aria-expanded", String(open));
+  if (open) renderDatePicker();
+}
+
+function renderDatePicker() {
+  const year = datePickerMonth.getFullYear();
+  const month = datePickerMonth.getMonth();
+  document.querySelector("#client-date-month").textContent =
+    datePickerMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const bookedDates = new Set(clients.filter((client) => client.id !== editingClientId).map((client) => client.date));
+  const todayKey = toDateKey(today);
+  const cells = [];
+  for (let blank = 0; blank < new Date(year, month, 1).getDay(); blank += 1) cells.push("<span></span>");
+  for (let day = 1; day <= new Date(year, month + 1, 0).getDate(); day += 1) {
+    const dateKey = toDateKey(new Date(year, month, day));
+    const selected = dateKey === clientDateValue.value;
+    const booked = bookedDates.has(dateKey);
+    const classes = ["portal-date-day", selected && "is-selected", dateKey === todayKey && "is-today", booked && "is-booked"]
+      .filter(Boolean).join(" ");
+    const label = formatDate(dateKey, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    cells.push(`<button type="button" class="${classes}" data-pick-date="${dateKey}" aria-pressed="${selected}" aria-label="${escapeHtml(label)}${booked ? ", another wedding booked" : ""}">${day}</button>`);
+  }
+  document.querySelector("#client-date-grid").innerHTML = cells.join("");
+}
+
+clientDateTrigger.addEventListener("click", () => toggleDatePicker(clientDatePicker.hidden));
+
+clientDatePicker.addEventListener("click", (event) => {
+  const stepButton = event.target.closest("[data-picker-step]");
+  if (stepButton) {
+    datePickerMonth = new Date(datePickerMonth.getFullYear(), datePickerMonth.getMonth() + Number(stepButton.dataset.pickerStep), 1);
+    renderDatePicker();
+    return;
+  }
+  const dayButton = event.target.closest("[data-pick-date]");
+  if (!dayButton) return;
+  setClientDate(dayButton.dataset.pickDate);
+  clientStatus.textContent = "";
+  toggleDatePicker(false);
+  clientDateTrigger.focus();
+});
+
 const MAX_CLIENT_EMAILS = 5;
 const clientEmailList = document.querySelector("#client-email-list");
 const clientEmailEntry = document.querySelector("#client-email-entry");
@@ -2884,6 +2945,9 @@ clientEmailList.addEventListener("click", (event) => {
 function openClientDialog(client = null) {
   editingClientId = client?.id || null;
   clientForm.reset();
+  datePickerMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  setClientDate(client?.date || "");
+  toggleDatePicker(false);
   setClientEmails(parseEmailRecipients(client?.email || ""));
   clientStatus.textContent = "";
   document.querySelector("#client-dialog-eyebrow").textContent = client ? "CLIENT DETAILS" : "NEW WORKSPACE";
@@ -2893,7 +2957,6 @@ function openClientDialog(client = null) {
   if (client) {
     const fields = clientForm.elements;
     fields.namedItem("name").value = client.name;
-    fields.namedItem("date").value = client.date;
     fields.namedItem("service").value = client.serviceValue;
     fields.namedItem("venue").value = client.venue;
     fields.namedItem("phone").value = client.phone;
@@ -2943,6 +3006,12 @@ clientForm.addEventListener("submit", async (event) => {
   const clientId = editingClientId;
   clientStatus.classList.remove("is-success");
   clientStatus.textContent = "";
+  if (!clientDateValue.value) {
+    clientStatus.textContent = "Choose a wedding date.";
+    toggleDatePicker(true);
+    clientDateTrigger.focus();
+    return;
+  }
   // Save an address that was typed but not added with the button.
   if (clientDetailsAvailable && !addClientEmail()) return;
   clientSubmitButton.disabled = true;
