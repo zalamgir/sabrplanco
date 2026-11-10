@@ -45,7 +45,7 @@ From a saved contract (generated or uploaded PDF), **Send for signature** emails
 
 Setup (once):
 
-1. Apply `supabase/migrations/20261114010000_contract_signatures.sql` in the Supabase SQL Editor.
+1. Apply `supabase/migrations/20261114010000_contract_signatures.sql` in the Supabase SQL Editor. If you applied an earlier copy of it, also apply `supabase/migrations/20261114020000_contract_signatures_service_grants.sql`.
 2. From a computer with the Supabase CLI linked to the project, deploy the function. It must be deployed without gateway JWT verification because the public signing page has no login; the function checks the admin session or signing token itself:
 
    ```sh

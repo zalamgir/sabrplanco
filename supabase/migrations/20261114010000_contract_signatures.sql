@@ -38,6 +38,8 @@ ALTER TABLE public.contract_signature_requests ENABLE ROW LEVEL SECURITY;
 -- Portal admins can read them to show status and download signed copies.
 REVOKE ALL ON TABLE public.contract_signature_requests FROM anon, authenticated;
 GRANT SELECT ON TABLE public.contract_signature_requests TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.contract_signature_requests TO service_role;
+GRANT INSERT ON TABLE public.email_deliveries TO service_role;
 
 DROP POLICY IF EXISTS "Portal admins can read signature requests" ON public.contract_signature_requests;
 CREATE POLICY "Portal admins can read signature requests"
