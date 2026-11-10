@@ -74,6 +74,11 @@ const LEGACY_CONTRACT_DETAILS = Object.freeze({
   coordinatorName: "Prioti Taher",
   services: contractServices,
   cancellationTerms: contractCancellationTerms,
+  servicesHeading: "Day of Coordination Services",
+});
+const CONTRACT_SERVICE_HEADINGS = Object.freeze({
+  day_of_coordination: "Day of Coordination Services",
+  wedding_planning: "Wedding Planning Services",
 });
 const DEFAULT_CONTRACT_SETTINGS = Object.freeze({
   depositPayment: "Zelle (929) 240-2040",
@@ -604,7 +609,7 @@ function drawContractPdf(state, scriptLogo) {
   drawDetail("Balance", `${formatCurrency(amounts?.balance)} due by ${dates || "the event date"} via ${details.balancePayment}`);
   drawDetail("Balance Due Date", `Day of Event (${details.balanceDueMethods})`);
 
-  drawSectionHeading("Day of Coordination Services");
+  drawSectionHeading(details.servicesHeading);
   details.services.forEach(drawBullet);
 
   drawSectionHeading("Terms & Cancellations");
@@ -1361,6 +1366,8 @@ function contractDetailsFor(draft) {
       // Contracts saved before services and terms were editable used the built-in wording.
       const list = cleanContractList(saved[key]);
       details[key] = list.length ? list : LEGACY_CONTRACT_DETAILS[key];
+    } else if (key === "servicesHeading") {
+      details[key] = typeof saved[key] === "string" && saved[key].trim() ? saved[key] : LEGACY_CONTRACT_DETAILS[key];
     } else {
       details[key] = typeof saved[key] === "string" ? saved[key] : "";
     }
@@ -1487,7 +1494,7 @@ function renderSavedPreview(state, type, client) {
         <p><strong>Balance Due Date:</strong> Day of Event (${escapeHtml(details.balanceDueMethods)})</p>
       </div>
       <section class="portal-contract-section">
-        <h5>Day of Coordination Services</h5>
+        <h5>${escapeHtml(details.servicesHeading)}</h5>
         <ul>${details.services.map((service) => `<li>${escapeHtml(service)}</li>`).join("")}</ul>
       </section>
       <section class="portal-contract-section">
@@ -2893,6 +2900,7 @@ documentPanel.addEventListener("submit", async (event) => {
       contractDetails: {
         ...contractSettings,
         balanceDueMethods: contractSettings.balancePayment,
+        servicesHeading: CONTRACT_SERVICE_HEADINGS[client.serviceValue] || LEGACY_CONTRACT_DETAILS.servicesHeading,
       },
     };
   }
