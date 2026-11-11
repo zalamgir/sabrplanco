@@ -9,8 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20261111a" />
-    <script src="script.js?v=20261111a" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20261111c" />
+    <script src="portal-config.js?v=20261111c" defer></script>
+    <script src="script.js?v=20261111c" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -37,54 +38,37 @@
         <p class="eyebrow"><span class="eyebrow-line"></span> A LOOK BACK</p>
         <h1 id="page-title">A few love<br /><em>stories.</em></h1>
         <p class="page-description">
-          Every celebration has its own feeling. Choose a couple to see their photos
+          Every celebration has its own feeling. Tap a couple to see their day
           and the kind words they shared.
         </p>
       </section>
       <section class="portfolio section-wrap" aria-label="Couple stories">
-        <p class="portfolio-note">Sample layout — replace names, photos, and reviews with approved client content.</p>
-        <div class="portfolio-tabs" role="tablist" aria-label="Couple stories">
-          <button class="portfolio-tab is-active" id="portfolio-tab-tom-lisa" type="button" role="tab" aria-selected="true" aria-controls="portfolio-panel-tom-lisa" tabindex="0">Tom + Lisa</button>
-          <button class="portfolio-tab" id="portfolio-tab-john-mary" type="button" role="tab" aria-selected="false" aria-controls="portfolio-panel-john-mary" tabindex="-1">John + Mary</button>
-          <button class="portfolio-tab" id="portfolio-tab-couple-three" type="button" role="tab" aria-selected="false" aria-controls="portfolio-panel-couple-three" tabindex="-1">Couple Three</button>
-        </div>
-        <div class="portfolio-panel" id="portfolio-panel-tom-lisa" role="tabpanel" aria-labelledby="portfolio-tab-tom-lisa" tabindex="0">
-          <div class="portfolio-gallery" aria-label="Tom and Lisa wedding photo placeholders">
-            <div class="portfolio-photo portfolio-photo-tall"><span>Tom + Lisa wedding photo</span></div>
-            <div class="portfolio-photo portfolio-photo-wide"><span>Tom + Lisa wedding photo</span></div>
-            <div class="portfolio-photo portfolio-photo-detail"><span>Tom + Lisa wedding photo</span></div>
-          </div>
-          <figure class="portfolio-review">
-            <p class="eyebrow"><span class="eyebrow-line"></span> KIND WORDS</p>
-            <blockquote>“Add Tom + Lisa's approved review here.”</blockquote>
-            <figcaption class="portfolio-attribution">Tom + Lisa</figcaption>
-          </figure>
-        </div>
-        <div class="portfolio-panel" id="portfolio-panel-john-mary" role="tabpanel" aria-labelledby="portfolio-tab-john-mary" tabindex="0" hidden>
-          <div class="portfolio-gallery" aria-label="John and Mary wedding photo placeholders">
-            <div class="portfolio-photo portfolio-photo-tall"><span>John + Mary wedding photo</span></div>
-            <div class="portfolio-photo portfolio-photo-wide"><span>John + Mary wedding photo</span></div>
-            <div class="portfolio-photo portfolio-photo-detail"><span>John + Mary wedding photo</span></div>
-          </div>
-          <figure class="portfolio-review">
-            <p class="eyebrow"><span class="eyebrow-line"></span> KIND WORDS</p>
-            <blockquote>“Add John + Mary's approved review here.”</blockquote>
-            <figcaption class="portfolio-attribution">John + Mary</figcaption>
-          </figure>
-        </div>
-        <div class="portfolio-panel" id="portfolio-panel-couple-three" role="tabpanel" aria-labelledby="portfolio-tab-couple-three" tabindex="0" hidden>
-          <div class="portfolio-gallery" aria-label="Couple three wedding photo placeholders">
-            <div class="portfolio-photo portfolio-photo-tall"><span>Couple Three wedding photo</span></div>
-            <div class="portfolio-photo portfolio-photo-wide"><span>Couple Three wedding photo</span></div>
-            <div class="portfolio-photo portfolio-photo-detail"><span>Couple Three wedding photo</span></div>
-          </div>
-          <figure class="portfolio-review">
-            <p class="eyebrow"><span class="eyebrow-line"></span> KIND WORDS</p>
-            <blockquote>“Add Couple Three's approved review here.”</blockquote>
-            <figcaption class="portfolio-attribution">Couple Three</figcaption>
-          </figure>
+        <div class="portfolio-grid" id="portfolio-grid" aria-live="polite" aria-busy="true">
+          <p class="portfolio-status">Loading love stories…</p>
         </div>
       </section>
+      <dialog class="story-dialog" id="story-dialog" aria-labelledby="story-title">
+        <div class="story-inner">
+          <button type="button" class="story-close" data-story-close aria-label="Close">×</button>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <span id="story-eyebrow">A LOVE STORY</span></p>
+          <h2 id="story-title"></h2>
+          <p class="story-meta" id="story-meta"></p>
+          <figure class="story-review" id="story-review" hidden>
+            <blockquote id="story-review-text"></blockquote>
+            <figcaption id="story-review-by"></figcaption>
+          </figure>
+          <div class="story-gallery" id="story-gallery"></div>
+          <p class="story-credit" id="story-credit" hidden></p>
+          <a class="button button-dark story-cta" href="inquiry.html">Tell us about your day <span aria-hidden="true">↗︎</span></a>
+        </div>
+        <div class="lightbox" id="lightbox" hidden role="group" aria-label="Photo viewer">
+          <button type="button" class="lightbox-close" data-lightbox-close aria-label="Close photo">×</button>
+          <button type="button" class="lightbox-step lightbox-prev" data-lightbox-step="-1" aria-label="Previous photo">‹</button>
+          <img id="lightbox-image" alt="" />
+          <button type="button" class="lightbox-step lightbox-next" data-lightbox-step="1" aria-label="Next photo">›</button>
+          <p class="lightbox-count" id="lightbox-count" aria-live="polite"></p>
+        </div>
+      </dialog>
     </main>
     <section class="contact-section" aria-labelledby="contact-title">
       <div class="contact-intro">

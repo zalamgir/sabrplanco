@@ -753,6 +753,7 @@ async function loadPortalData() {
 function showView(view) {
   activeView = view;
   portalHasUnsavedEdits = false;
+  if (view === "portfolio") loadPortfolio();
   document.querySelectorAll(".portal-view").forEach((section) => {
     const visible = section.id === `${view}-view`;
     section.hidden = !visible;
@@ -764,7 +765,7 @@ function showView(view) {
     if (selected) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
-  const titles = { calendar: "Your calendar", clients: "Your clients", workspace: "Client workspace", empty: "Your clients", settings: "Portal settings", inquiries: "Inquiries" };
+  const titles = { calendar: "Your calendar", clients: "Your clients", workspace: "Client workspace", empty: "Your clients", settings: "Portal settings", inquiries: "Inquiries", portfolio: "Portfolio" };
   document.querySelector("#portal-page-title").textContent = titles[view] || "Coordinator portal";
 }
 
@@ -4458,3 +4459,372 @@ async function showSignedContractPreview(client) {
     await renderPdfPage(preview);
   }
 }
+
+// Portfolio ---------------------------------------------------------------------
+// Couples featured on the public Portfolio page. Photos are resized on this device,
+// then uploaded to the public "portfolio-photos" bucket as a full-size copy and a
+// smaller copy for grids. Entries appear on the website only when published.
+
+const PORTFOLIO_BUCKET = "portfolio-photos";
+const PORTFOLIO_MIGRATION = "supabase/migrations/20261115010000_portfolio.sql";
+const PORTFOLIO_MAX_PHOTOS = 40;
+const portfolioEntries = [];
+let portfolioAvailable = true;
+let portfolioLoadError = "";
+let portfolioEditing = null; // { id, isNew, photos, uploaded: [], removed: [] }
+const portfolioEditor = document.querySelector("#portfolio-editor");
+
+// crypto.randomUUID needs a secure (https) page; fall back to random bytes elsewhere.
+function newUuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function portfolioPhotoUrl(path) {
+  return `${supabaseConfig.supabaseUrl}/storage/v1/object/public/${PORTFOLIO_BUCKET}/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+function formatPortfolioMonth(dateKey) {
+  if (!dateKey) return "";
+  const [year, month] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+async function loadPortfolio() {
+  const { data, error } = await supabaseClient
+    .from("portfolio_entries")
+    .select("id, couple_names, wedding_date, venue, service, review, photographer_name, photographer_url, photos, published, sort_order, client_id")
+    .order("sort_order", { ascending: true })
+    .order("wedding_date", { ascending: false });
+  portfolioAvailable = !(error && isMissingTableError(error));
+  portfolioLoadError = error && portfolioAvailable ? error.message : "";
+  if (!error) portfolioEntries.splice(0, portfolioEntries.length, ...data);
+  renderPortfolioList();
+}
+
+function renderPortfolioList() {
+  const list = document.querySelector("#portfolio-list");
+  const empty = document.querySelector("#portfolio-empty");
+  document.querySelector("#portfolio-add").disabled = !portfolioAvailable || Boolean(portfolioLoadError);
+  if (!portfolioAvailable || portfolioLoadError) {
+    list.innerHTML = "";
+    empty.hidden = false;
+    empty.textContent = portfolioLoadError
+      ? `The portfolio could not be loaded: ${portfolioLoadError}`
+      : `The portfolio needs a one-time database update. Run ${PORTFOLIO_MIGRATION} in the Supabase SQL Editor, then reload the portal.`;
+    return;
+  }
+  empty.hidden = portfolioEntries.length > 0;
+  empty.textContent = "No couples yet. Add one to start your portfolio.";
+  list.innerHTML = portfolioEntries.map((entry, index) => {
+    const cover = Array.isArray(entry.photos) ? entry.photos[0] : null;
+    const meta = [formatPortfolioMonth(entry.wedding_date), entry.venue].filter(Boolean).join(" · ");
+    return `<article class="portal-card portal-portfolio-item">
+      <div class="portal-portfolio-thumb">${cover ? `<img src="${escapeHtml(portfolioPhotoUrl(cover.thumb))}" alt="" loading="lazy" />` : "<span>No photos</span>"}</div>
+      <div class="portal-portfolio-item-copy">
+        <strong>${escapeHtml(entry.couple_names)}</strong>
+        <small>${escapeHtml(meta || "Date and venue not set")}</small>
+        <small>${(entry.photos || []).length} photo${(entry.photos || []).length === 1 ? "" : "s"} · ${entry.review ? "Has feedback" : "No feedback yet"}</small>
+        <span class="portal-portfolio-badge${entry.published ? " is-published" : ""}">${entry.published ? "On website" : "Draft"}</span>
+      </div>
+      <div class="portal-portfolio-item-actions">
+        <button type="button" class="button portal-edit-client" data-portfolio-edit="${escapeHtml(entry.id)}">Edit</button>
+        <button type="button" class="portal-date-step" data-portfolio-move="-1" data-portfolio-id="${escapeHtml(entry.id)}" aria-label="Move ${escapeHtml(entry.couple_names)} up"${index === 0 ? " disabled" : ""}>↑</button>
+        <button type="button" class="portal-date-step" data-portfolio-move="1" data-portfolio-id="${escapeHtml(entry.id)}" aria-label="Move ${escapeHtml(entry.couple_names)} down"${index === portfolioEntries.length - 1 ? " disabled" : ""}>↓</button>
+      </div>
+    </article>`;
+  }).join("");
+}
+
+function showPortfolioEditor(show) {
+  portfolioEditor.hidden = !show;
+  document.querySelector("#portfolio-list").hidden = show;
+  document.querySelector("#portfolio-toolbar").hidden = show;
+  if (show) document.querySelector("#portfolio-empty").hidden = true;
+  else renderPortfolioList();
+}
+
+function openPortfolioEditor(entry = null) {
+  portfolioEditing = {
+    id: entry?.id || newUuid(),
+    isNew: !entry,
+    photos: Array.isArray(entry?.photos) ? entry.photos.map((photo) => ({ ...photo })) : [],
+    uploaded: [],
+    removed: [],
+  };
+  portfolioEditor.reset();
+  const fields = portfolioEditor.elements;
+  document.querySelector("#portfolio-editor-eyebrow").textContent = entry ? "EDIT COUPLE" : "NEW COUPLE";
+  document.querySelector("#portfolio-editor-title").textContent = entry ? entry.couple_names : "Add a couple";
+  document.querySelector("#portfolio-delete").hidden = !entry;
+  document.querySelector("#portfolio-status").textContent = "";
+  document.querySelector("#portfolio-photo-status").textContent = "";
+  const clientSelect = document.querySelector("#portfolio-from-client");
+  clientSelect.innerHTML = `<option value="">—</option>${[...clients].sort((a, b) => b.date.localeCompare(a.date))
+    .map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.name)} · ${escapeHtml(formatDate(client.date, { month: "short", year: "numeric" }))}</option>`).join("")}`;
+  clientSelect.value = entry?.client_id && clients.some((client) => client.id === entry.client_id) ? entry.client_id : "";
+  fields.namedItem("couple_names").value = entry?.couple_names || "";
+  fields.namedItem("venue").value = entry?.venue || "";
+  fields.namedItem("service").value = entry?.service || "";
+  fields.namedItem("review").value = entry?.review || "";
+  fields.namedItem("photographer_name").value = entry?.photographer_name || "";
+  fields.namedItem("photographer_url").value = entry?.photographer_url || "";
+  fields.namedItem("published").checked = Boolean(entry?.published);
+  document.querySelector("#portfolio-date-slot").innerHTML = renderDatePickerField({
+    id: "portfolio-date",
+    label: "Wedding date (the website shows month and year)",
+    name: "wedding_date",
+    value: entry?.wedding_date || "",
+  });
+  renderPortfolioPhotos();
+  showPortfolioEditor(true);
+  portalHasUnsavedEdits = false;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderPortfolioPhotos() {
+  const container = document.querySelector("#portfolio-photos");
+  const photos = portfolioEditing?.photos || [];
+  container.innerHTML = photos.length
+    ? photos.map((photo, index) => `<figure class="portal-portfolio-photo">
+        <img src="${escapeHtml(photo.preview || portfolioPhotoUrl(photo.thumb))}" alt="" />
+        ${index === 0 ? '<span class="portal-portfolio-cover">Cover</span>' : ""}
+        <figcaption>
+          <button type="button" data-photo-action="left" data-photo-index="${index}" aria-label="Move photo ${index + 1} earlier"${index === 0 ? " disabled" : ""}>←</button>
+          ${index === 0 ? "" : `<button type="button" data-photo-action="cover" data-photo-index="${index}" aria-label="Make photo ${index + 1} the cover">Cover</button>`}
+          <button type="button" data-photo-action="right" data-photo-index="${index}" aria-label="Move photo ${index + 1} later"${index === photos.length - 1 ? " disabled" : ""}>→</button>
+          <button type="button" data-photo-action="remove" data-photo-index="${index}" aria-label="Remove photo ${index + 1}">×</button>
+        </figcaption>
+      </figure>`).join("")
+    : '<p class="portal-muted">No photos yet.</p>';
+}
+
+async function resizeImage(file, maxEdge, quality) {
+  let source;
+  try {
+    source = await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch {
+    source = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error(`${file.name} isn't a photo this browser can read.`));
+      image.src = URL.createObjectURL(file);
+    });
+  }
+  const width = source.width || source.naturalWidth;
+  const height = source.height || source.naturalHeight;
+  const scale = Math.min(1, maxEdge / Math.max(width, height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.round(height * scale);
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#ffffff"; // transparent PNGs become white, not black, as JPEG
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  source.close?.();
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+  if (!blob) throw new Error(`${file.name} couldn't be processed.`);
+  return { blob, width: canvas.width, height: canvas.height };
+}
+
+async function uploadPortfolioPhotos(files) {
+  const status = document.querySelector("#portfolio-photo-status");
+  const room = PORTFOLIO_MAX_PHOTOS - portfolioEditing.photos.length;
+  const selected = [...files].slice(0, Math.max(room, 0));
+  if (!selected.length) {
+    status.textContent = `A couple can have up to ${PORTFOLIO_MAX_PHOTOS} photos.`;
+    return;
+  }
+  const input = document.querySelector("#portfolio-photo-input");
+  input.disabled = true;
+  let done = 0;
+  for (const file of selected) {
+    status.textContent = `Preparing photo ${done + 1} of ${selected.length}…`;
+    try {
+      const full = await resizeImage(file, 2000, 0.85);
+      const thumb = await resizeImage(file, 800, 0.8);
+      const base = `${portfolioEditing.id}/${newUuid()}`;
+      const paths = { full: `${base}-full.jpg`, thumb: `${base}-thumb.jpg` };
+      for (const [key, blob] of [["full", full.blob], ["thumb", thumb.blob]]) {
+        const { error } = await supabaseClient.storage
+          .from(PORTFOLIO_BUCKET)
+          .upload(paths[key], blob, { contentType: "image/jpeg", cacheControl: "31536000", upsert: false });
+        if (error) throw new Error(error.message);
+        portfolioEditing.uploaded.push(paths[key]);
+      }
+      portfolioEditing.photos.push({ ...paths, width: full.width, height: full.height, preview: URL.createObjectURL(thumb.blob) });
+      portalHasUnsavedEdits = true;
+      done += 1;
+      renderPortfolioPhotos();
+    } catch (error) {
+      status.textContent = `${file.name || "A photo"} couldn't be added: ${error.message || "Unknown error"}`;
+      input.disabled = false;
+      input.value = "";
+      return;
+    }
+  }
+  status.textContent = `${done} photo${done === 1 ? "" : "s"} added. Save to keep them.`
+    + (files.length > selected.length ? ` (${files.length - selected.length} skipped: ${PORTFOLIO_MAX_PHOTOS}-photo limit)` : "");
+  input.disabled = false;
+  input.value = "";
+}
+
+async function removePortfolioFiles(paths) {
+  if (!paths.length) return;
+  await supabaseClient.storage.from(PORTFOLIO_BUCKET).remove(paths).catch(() => {});
+}
+
+async function closePortfolioEditor({ discard = true } = {}) {
+  if (discard && portfolioEditing?.uploaded.length) await removePortfolioFiles(portfolioEditing.uploaded);
+  portfolioEditing?.photos.forEach((photo) => photo.preview && URL.revokeObjectURL(photo.preview));
+  portfolioEditing = null;
+  portalHasUnsavedEdits = false;
+  showPortfolioEditor(false);
+}
+
+document.querySelector("#portfolio-add").addEventListener("click", () => openPortfolioEditor());
+
+document.querySelector("#portfolio-list").addEventListener("click", async (event) => {
+  const edit = event.target.closest("[data-portfolio-edit]");
+  if (edit) {
+    const entry = portfolioEntries.find((item) => item.id === edit.dataset.portfolioEdit);
+    if (entry) openPortfolioEditor(entry);
+    return;
+  }
+  const move = event.target.closest("[data-portfolio-move]");
+  if (!move) return;
+  const index = portfolioEntries.findIndex((item) => item.id === move.dataset.portfolioId);
+  const target = index + Number(move.dataset.portfolioMove);
+  if (index < 0 || target < 0 || target >= portfolioEntries.length) return;
+  const [entry] = portfolioEntries.splice(index, 1);
+  portfolioEntries.splice(target, 0, entry);
+  renderPortfolioList();
+  // Store the new order as 10, 20, 30… so later moves only touch changed rows.
+  const updates = portfolioEntries
+    .map((item, position) => ({ item, order: (position + 1) * 10 }))
+    .filter(({ item, order }) => item.sort_order !== order);
+  for (const { item, order } of updates) {
+    const { error } = await supabaseClient.from("portfolio_entries").update({ sort_order: order }).eq("id", item.id);
+    if (error) {
+      setPortalNotice(`The new order couldn't be saved: ${error.message}`, true);
+      await loadPortfolio();
+      return;
+    }
+    item.sort_order = order;
+  }
+});
+
+document.querySelector("#portfolio-from-client").addEventListener("change", (event) => {
+  const client = clients.find((item) => item.id === event.target.value);
+  if (!client) return;
+  const fields = portfolioEditor.elements;
+  if (!fields.namedItem("couple_names").value.trim()) fields.namedItem("couple_names").value = client.name;
+  if (!fields.namedItem("venue").value.trim()) fields.namedItem("venue").value = client.venue;
+  if (!fields.namedItem("service").value) fields.namedItem("service").value = client.serviceValue;
+  const dateField = portfolioEditor.querySelector("[data-date-field]");
+  if (dateField && !fields.namedItem("wedding_date").value) setDateFieldValue(dateField, client.date);
+  portalHasUnsavedEdits = true;
+});
+
+document.querySelector("#portfolio-photo-input").addEventListener("change", (event) => {
+  if (event.target.files?.length) uploadPortfolioPhotos(event.target.files);
+});
+
+document.querySelector("#portfolio-photos").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-photo-action]");
+  if (!button || !portfolioEditing) return;
+  const photos = portfolioEditing.photos;
+  const index = Number(button.dataset.photoIndex);
+  const action = button.dataset.photoAction;
+  if (action === "left" && index > 0) [photos[index - 1], photos[index]] = [photos[index], photos[index - 1]];
+  if (action === "right" && index < photos.length - 1) [photos[index + 1], photos[index]] = [photos[index], photos[index + 1]];
+  if (action === "cover") photos.unshift(...photos.splice(index, 1));
+  if (action === "remove") {
+    const [removed] = photos.splice(index, 1);
+    if (removed.preview) URL.revokeObjectURL(removed.preview);
+    portfolioEditing.removed.push(removed.full, removed.thumb);
+  }
+  portalHasUnsavedEdits = true;
+  renderPortfolioPhotos();
+});
+
+portfolioEditor.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!portfolioEditing) return;
+  const status = document.querySelector("#portfolio-status");
+  const fields = portfolioEditor.elements;
+  const coupleNames = fields.namedItem("couple_names").value.trim();
+  const photographerUrl = fields.namedItem("photographer_url").value.trim();
+  const published = fields.namedItem("published").checked;
+  if (!coupleNames) {
+    status.textContent = "Add the couple's names.";
+    fields.namedItem("couple_names").focus();
+    return;
+  }
+  if (photographerUrl && !/^https?:\/\/\S+\.\S+/i.test(photographerUrl)) {
+    status.textContent = "The photographer link should start with https://";
+    fields.namedItem("photographer_url").focus();
+    return;
+  }
+  if (published && !portfolioEditing.photos.length) {
+    status.textContent = "Add at least one photo before showing this couple on the website.";
+    return;
+  }
+  const saveButton = document.querySelector("#portfolio-save");
+  saveButton.disabled = true;
+  status.textContent = "Saving…";
+  const existing = portfolioEntries.find((item) => item.id === portfolioEditing.id);
+  const row = {
+    id: portfolioEditing.id,
+    couple_names: coupleNames,
+    wedding_date: fields.namedItem("wedding_date").value || null,
+    venue: fields.namedItem("venue").value.trim() || null,
+    service: fields.namedItem("service").value || null,
+    review: fields.namedItem("review").value.trim() || null,
+    photographer_name: fields.namedItem("photographer_name").value.trim() || null,
+    photographer_url: photographerUrl || null,
+    photos: portfolioEditing.photos.map(({ full, thumb, width, height }) => ({ full, thumb, width, height })),
+    published,
+    client_id: fields.namedItem("from-client").value || existing?.client_id || null,
+    sort_order: existing ? existing.sort_order : (Math.max(0, ...portfolioEntries.map((item) => item.sort_order || 0)) + 10),
+  };
+  const { error } = await supabaseClient.from("portfolio_entries").upsert(row);
+  saveButton.disabled = false;
+  if (error) {
+    status.textContent = `The couple couldn't be saved: ${error.message}`;
+    return;
+  }
+  await removePortfolioFiles(portfolioEditing.removed);
+  portfolioEditing.uploaded = []; // now referenced by the saved entry
+  await closePortfolioEditor({ discard: false });
+  await loadPortfolio();
+  setPortalNotice(published ? `${coupleNames} is saved and shown on your website.` : `${coupleNames} is saved as a draft (not on the website yet).`);
+});
+
+for (const id of ["#portfolio-cancel", "#portfolio-cancel-x"]) {
+  document.querySelector(id).addEventListener("click", async () => {
+    if (portalHasUnsavedEdits && !window.confirm("Discard your changes to this couple?")) return;
+    await closePortfolioEditor({ discard: true });
+  });
+}
+
+document.querySelector("#portfolio-delete").addEventListener("click", async () => {
+  const entry = portfolioEntries.find((item) => item.id === portfolioEditing?.id);
+  if (!entry) return;
+  if (!window.confirm(`Delete ${entry.couple_names} from your portfolio? Their photos are removed too. This can't be undone.`)) return;
+  const { error } = await supabaseClient.from("portfolio_entries").delete().eq("id", entry.id);
+  if (error) {
+    document.querySelector("#portfolio-status").textContent = `The couple couldn't be deleted: ${error.message}`;
+    return;
+  }
+  const paths = [...(entry.photos || []).flatMap((photo) => [photo.full, photo.thumb]), ...portfolioEditing.uploaded];
+  await removePortfolioFiles(paths);
+  portfolioEditing.uploaded = [];
+  await closePortfolioEditor({ discard: false });
+  await loadPortfolio();
+  setPortalNotice(`${entry.couple_names} was removed from your portfolio.`);
+});

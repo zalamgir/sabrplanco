@@ -16,12 +16,12 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="../styles.css?v=20261111a" />
-    <script src="../portal-config.js?v=20261111a"></script>
+    <link rel="stylesheet" href="../styles.css?v=20261111c" />
+    <script src="../portal-config.js?v=20261111c"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    <script src="../portal.js?v=20261111a" defer></script>
-    <script src="pwa.js?v=20261111a" defer></script>
+    <script src="../portal.js?v=20261111c" defer></script>
+    <script src="pwa.js?v=20261111c" defer></script>
   </head>
   <body class="portal-body">
     <div class="portal-pull-indicator" id="portal-pull-indicator" aria-hidden="true">
@@ -126,6 +126,14 @@
               </svg>
               Inquiries
               <span class="portal-nav-badge" id="inquiry-badge" hidden></span>
+            </button>
+            <button type="button" class="portal-nav-item" data-view="portfolio">
+              <svg class="portal-settings-icon portal-inquiry-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <rect x="3" y="4.5" width="18" height="15" rx="1.5" />
+                <circle cx="8.5" cy="9.5" r="1.6" />
+                <path d="m4 17.5 5-5 3.5 3.5 2.5-2.5 5 5" stroke-linejoin="round" />
+              </svg>
+              Portfolio
             </button>
           </nav>
         </aside>
@@ -297,6 +305,77 @@
             </div>
             <div class="portal-inquiry-list" id="inquiry-list"></div>
             <p class="portal-muted portal-client-empty" id="inquiry-empty" hidden></p>
+          </section>
+          <section class="portal-view" id="portfolio-view" aria-labelledby="portfolio-heading" hidden>
+            <div class="portal-section-intro">
+              <div>
+                <p class="eyebrow"><span class="eyebrow-line"></span> YOUR WEBSITE</p>
+                <h2 id="portfolio-heading">Portfolio</h2>
+              </div>
+              <p>Couples featured on your website's Portfolio page. Only couples you publish are shown.</p>
+            </div>
+            <div class="portal-portfolio-toolbar" id="portfolio-toolbar">
+              <button type="button" class="button button-dark portal-inquiry-convert" id="portfolio-add">+ Add couple</button>
+              <a class="portal-portfolio-site-link" href="../portfolio.html" target="_blank" rel="noopener">View portfolio page ↗</a>
+            </div>
+            <div class="portal-portfolio-list" id="portfolio-list"></div>
+            <p class="portal-muted portal-client-empty" id="portfolio-empty" hidden></p>
+
+            <form class="portal-card portal-portfolio-editor portal-template-form" id="portfolio-editor" hidden novalidate>
+              <div class="portal-portfolio-editor-head">
+                <div>
+                  <p class="eyebrow"><span class="eyebrow-line"></span> <span id="portfolio-editor-eyebrow">NEW COUPLE</span></p>
+                  <h3 id="portfolio-editor-title">Add a couple</h3>
+                </div>
+                <button type="button" class="dialog-close" id="portfolio-cancel-x" aria-label="Close editor">×</button>
+              </div>
+              <label>Start from a client <span class="portal-optional">(optional)</span>
+                <select name="from-client" id="portfolio-from-client"></select>
+              </label>
+              <div class="portal-form-grid">
+                <label>Couple names (as shown on the website)
+                  <input name="couple_names" type="text" maxlength="120" required placeholder="e.g. Nimra &amp; Bilal" />
+                </label>
+                <div id="portfolio-date-slot"></div>
+                <label>Venue <span class="portal-optional">(optional)</span>
+                  <input name="venue" type="text" maxlength="200" />
+                </label>
+                <label>Service <span class="portal-optional">(optional)</span>
+                  <select name="service">
+                    <option value="">Not shown</option>
+                    <option value="day_of_coordination">Day-of coordination</option>
+                    <option value="wedding_planning">Wedding planning</option>
+                  </select>
+                </label>
+              </div>
+              <div class="portal-dialog-field">
+                <span class="portal-field-label">Photos</span>
+                <p class="portal-muted portal-portfolio-hint">The first photo is the cover. Photos are resized on this device before uploading. Up to 40.</p>
+                <div class="portal-portfolio-photos" id="portfolio-photos"></div>
+                <label class="portal-file-label portal-portfolio-upload">Add photos
+                  <input type="file" accept="image/*" multiple id="portfolio-photo-input" />
+                </label>
+                <span class="portal-form-status" id="portfolio-photo-status" role="status" aria-live="polite"></span>
+              </div>
+              <label>Their feedback <span class="portal-optional">(optional, shown as a quote)</span>
+                <textarea name="review" rows="5" maxlength="3000" placeholder="What the couple said about working with you"></textarea>
+              </label>
+              <div class="portal-form-grid">
+                <label>Photographer <span class="portal-optional">(credit)</span>
+                  <input name="photographer_name" type="text" maxlength="120" placeholder="e.g. Golden Hour Studio" />
+                </label>
+                <label>Photographer link <span class="portal-optional">(website or Instagram)</span>
+                  <input name="photographer_url" type="url" maxlength="300" placeholder="https://" />
+                </label>
+              </div>
+              <label class="portal-email-confirm"><input name="published" type="checkbox" /><span>Show this couple on the website</span></label>
+              <div class="portal-form-actions">
+                <span class="portal-form-status" id="portfolio-status" role="status" aria-live="polite"></span>
+                <button type="button" class="button portal-delete-client" id="portfolio-delete" hidden>Delete couple</button>
+                <button type="button" class="button portal-cancel-button" id="portfolio-cancel">Cancel</button>
+                <button type="submit" class="button button-dark" id="portfolio-save">Save</button>
+              </div>
+            </form>
           </section>
           <section class="portal-view" id="clients-view" aria-labelledby="clients-heading" hidden>
             <div class="portal-section-intro">

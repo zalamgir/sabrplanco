@@ -56,6 +56,12 @@ Setup (once):
 
 3. It uses the existing `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `PORTAL_ALLOWED_ORIGINS` secrets, plus the `SUPABASE_SERVICE_ROLE_KEY` that Supabase provides to Edge Functions automatically.
 
+## Portfolio
+
+The public `portfolio.html` page lists couples published from the portal's **Portfolio** tab as cards; tapping one opens their story with a photo gallery, a full-screen swipeable photo viewer, their feedback, and the photographer credit. In the portal, add a couple (optionally starting from an existing client), upload photos (resized on the device to a 2000px copy and an 800px thumbnail), choose the cover and order, add feedback and a photographer credit, and tick **Show this couple on the website**. Couples can be reordered, unpublished, edited, or deleted (which also deletes their photos).
+
+Apply `supabase/migrations/20261115010000_portfolio.sql` once in the Supabase SQL Editor. It creates the `portfolio_entries` table (the public site can read only published entries) and a public `portfolio-photos` storage bucket that only portal admins can upload to or delete from. Photos in that bucket are publicly viewable by URL, including those of unpublished drafts if someone had the exact link.
+
 ## Contract details settings
 
 Payment and contact details printed on contracts (deposit payment method, balance payment method, contact email and phone, and the coordinator name on the signature line), plus the services list and terms & cancellations, are set in the portal under **Settings → Contract details**. Apply `supabase/migrations/20261112010000_portal_settings.sql` once in the Supabase SQL Editor to enable saving them; until then the portal uses the built-in defaults. Each contract stores a copy of these details when it is saved, so changing settings later does not alter contracts already saved. Contracts saved before this feature keep their original wording.
@@ -114,7 +120,7 @@ Open `index.html` in a browser, then use the navigation to move between pages.
 ## Before publishing
 
 - The website palette is inspired by the supplied Sabr Plan Co. logo: espresso brown, ivory, and warm champagne. The original is preserved in `assets/sabr-plan-co-logo.png`, and the exact script lettering is isolated for use on the site in `assets/sabr-script.png`.
-- The portfolio page includes sample couple tabs and clearly marked photo/review placeholders. Replace them with real names, photos, and client-approved testimonials before presenting them as past work.
+- The portfolio page shows couples published from the portal's **Portfolio** tab. Get each couple's permission to feature their names, photos, and feedback, and the photographer's permission to use their photos (credit them in the Photographer fields).
 - Test PDF upload, preview, and email with fictional, disposable PDFs before using real client documents.
 - Review the starter copy and FAQ answers, and replace or expand them with approved business details.
 - The inquiry form submits to Web3Forms. Its public client-side access key is in the form markup; verify `sabrplanco@gmail.com` in Web3Forms and send a test submission before relying on delivery.
