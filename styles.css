@@ -6071,6 +6071,14 @@ body:has(.portal-app[data-theme="dark"]) .portal-pull-indicator {
     display: none;
   }
 
+  /* Safari's blur under the clock/battery reaches past the status bar and clipped the top of the logo.
+     Only in the browser: the Home Screen app has no such fade. */
+  @media (display-mode: browser) {
+    .portal-sidebar {
+      padding-top: 1.9rem;
+    }
+  }
+
   .portal-home-summary {
     display: grid;
     margin-bottom: 1.1rem;
