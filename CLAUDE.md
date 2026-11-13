@@ -35,3 +35,20 @@ Wedding coordination business site (sabrplanco.com, GitHub Pages) plus a private
 - Supabase errors on a dropped connection must never sign the coordinator out (`isNetworkError`).
 - `crypto.randomUUID` only exists on https pages — use `newUuid()` in `portal.js`.
 - Contracts snapshot their settings when saved (`contractDetails`): changing Settings must not alter already-saved or signed contracts.
+
+## People
+- The owner's wife is the main coordinator and a primary portal user. Plan for separate portal logins per person (each added to `public.portal_admins`).
+
+## Status and next steps (update as things change)
+Built: inquiries → clients/calendar → contracts with e-signature (signatures on the lines, signed PDF shown in portal) → itineraries (offline copies) → emailing → settings (contract details, coordinator signature, theme) → portfolio (portal tab + public page) → pull-to-refresh, PDF.js 6.
+
+Owner still to do (as of 2026-11-13):
+- Run `supabase/migrations/20261115010000_portfolio.sql` in the Supabase SQL Editor (portfolio tab shows a reminder until then).
+- Turn on two-factor auth for Supabase, GitHub, Gmail, IONOS, Resend; check Supabase Auth settings (sign-ups off, password rules); give the wife her own portal login.
+- Have an attorney review the contract wording and e-signing process; delete the old Resend API key / `mail.sabrplanco.com` domain.
+
+Next requested work, in order:
+1. **Outlook-style bottom tab bar on phones**: floating rounded bar with Home (clients — opens here, summary cards on top), Calendar, Inquiries (new-count badge), Portfolio. Settings and Sign out move to a menu from the logo/name at the top. Keep the left sidebar on desktop. No native app — stay a PWA. (Open questions for the owner: Home shows all clients with Upcoming/Past tabs or upcoming only; Settings/Sign out in a top menu vs a fifth "More" tab.)
+2. **Portal security**: TOTP two-factor sign-in enforced by the database (make `is_portal_admin()`/RLS require `aal2`), auto-lock after inactivity, Content Security Policy + Subresource Integrity on CDN scripts; optional sign-in alert emails.
+3. Backups / "Export everything" button; payment tracking (deposit/balance paid + due dates); "Request feedback" link that feeds the portfolio; vendor list per client; reminders.
+4. Public website content (services and pricing, About story and photo, real portfolio couples) — needs content from the owner.
