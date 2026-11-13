@@ -16,12 +16,12 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="../styles.css?v=20261111c" />
-    <script src="../portal-config.js?v=20261111c"></script>
+    <link rel="stylesheet" href="../styles.css?v=20261113a" />
+    <script src="../portal-config.js?v=20261113a"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-    <script src="../portal.js?v=20261111c" defer></script>
-    <script src="pwa.js?v=20261111c" defer></script>
+    <script src="../portal.js?v=20261113a" defer></script>
+    <script src="pwa.js?v=20261113a" defer></script>
   </head>
   <body class="portal-body">
     <div class="portal-pull-indicator" id="portal-pull-indicator" aria-hidden="true">
@@ -378,6 +378,7 @@
             </form>
           </section>
           <section class="portal-view" id="clients-view" aria-labelledby="clients-heading" hidden>
+            <div class="portal-summary-grid portal-home-summary" id="portal-home-summary"></div>
             <div class="portal-section-intro">
               <div>
                 <p class="eyebrow"><span class="eyebrow-line"></span> YOUR COUPLES</p>
@@ -455,6 +456,74 @@
             </div>
           </div>
         </div>
+
+        <div class="portal-more-menu" id="portal-more-menu" role="menu" aria-label="More" hidden>
+          <button type="button" class="portal-more-item" role="menuitem" data-tab-view="settings">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+              <circle cx="9" cy="6" r="2" />
+              <circle cx="15" cy="12" r="2" />
+              <circle cx="8" cy="18" r="2" />
+            </svg>
+            Settings
+          </button>
+          <a class="portal-more-item" role="menuitem" href="../index.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="8.5" />
+              <path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.2 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.2-3.5-8.5s1.1-6.1 3.5-8.5Z" stroke-linejoin="round" />
+            </svg>
+            Public website <span class="portal-more-arrow" aria-hidden="true">↗︎</span>
+          </a>
+          <button type="button" class="portal-more-item portal-more-sign-out" role="menuitem" id="portal-more-sign-out">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+              <path d="M14 4.5H6.5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1H14" />
+              <path d="M10.5 12h9M16.5 8.5 20 12l-3.5 3.5" stroke-linejoin="round" />
+            </svg>
+            Sign out
+          </button>
+        </div>
+
+        <nav class="portal-tabbar" aria-label="Portal sections">
+          <button type="button" class="portal-tab" data-tab-view="clients">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+              <path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1Z" stroke-linejoin="round" />
+            </svg>
+            <span>Home</span>
+          </button>
+          <button type="button" class="portal-tab" data-tab-view="calendar">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+              <rect x="3.5" y="5" width="17" height="15" rx="1.5" />
+              <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+            </svg>
+            <span>Calendar</span>
+          </button>
+          <button type="button" class="portal-tab" data-tab-view="inquiries">
+            <span class="portal-tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <rect x="3" y="5.5" width="18" height="13" rx="1" />
+                <path d="M3.5 6.5 12 13l8.5-6.5" stroke-linejoin="round" />
+              </svg>
+              <span class="portal-tab-badge" data-inquiry-badge hidden></span>
+            </span>
+            <span>Inquiries</span>
+          </button>
+          <button type="button" class="portal-tab" data-tab-view="portfolio">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+              <rect x="3" y="4.5" width="18" height="15" rx="1.5" />
+              <circle cx="8.5" cy="9.5" r="1.6" />
+              <path d="m4 17.5 5-5 3.5 3.5 2.5-2.5 5 5" stroke-linejoin="round" />
+            </svg>
+            <span>Portfolio</span>
+          </button>
+          <button type="button" class="portal-tab" id="portal-more-tab" aria-haspopup="menu" aria-expanded="false" aria-controls="portal-more-menu">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+              <circle cx="5.5" cy="12" r="1.3" />
+              <circle cx="12" cy="12" r="1.3" />
+              <circle cx="18.5" cy="12" r="1.3" />
+            </svg>
+            <span>More</span>
+          </button>
+        </nav>
 
         <dialog class="portal-dialog" id="client-dialog" aria-labelledby="client-dialog-title">
           <form class="portal-dialog-form" id="client-form">

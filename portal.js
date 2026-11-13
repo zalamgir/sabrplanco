@@ -759,12 +759,16 @@ function showView(view) {
     section.hidden = !visible;
     section.classList.toggle("is-visible", visible);
   });
-  document.querySelectorAll(".portal-nav-item").forEach((button) => {
-    const selected = button.dataset.view === (view === "workspace" ? "clients" : view);
+  const navView = view === "workspace" || view === "empty" ? "clients" : view;
+  document.querySelectorAll(".portal-nav-item, .portal-tab[data-tab-view]").forEach((button) => {
+    const selected = (button.dataset.view || button.dataset.tabView) === navView;
     button.classList.toggle("is-active", selected);
     if (selected) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
+  // On phones, Settings lives under the More tab.
+  setMoreMenuOpen(false);
+  document.querySelector("#portal-more-tab").classList.toggle("is-active", view === "settings");
   const titles = { calendar: "Your calendar", clients: "Your clients", workspace: "Client workspace", empty: "Your clients", settings: "Portal settings", inquiries: "Inquiries", portfolio: "Portfolio" };
   document.querySelector("#portal-page-title").textContent = titles[view] || "Coordinator portal";
 }
@@ -780,7 +784,7 @@ function splitClientsByDate() {
 function renderSummary() {
   const { upcoming, past } = splitClientsByDate();
   const next = upcoming[0];
-  document.querySelector("#portal-summary").innerHTML = `
+  const summaryHtml = `
     <article class="portal-summary-card">
       <span class="portal-summary-icon" aria-hidden="true">♡</span>
       <span><small>Upcoming weddings</small><strong>${upcoming.length}</strong></span>
@@ -793,6 +797,9 @@ function renderSummary() {
       <span class="portal-summary-icon" aria-hidden="true">✧</span>
       <span><small>Next celebration</small><strong>${escapeHtml(next ? formatDate(next.date, { month: "short", day: "numeric" }) : "—")}</strong>${next ? `<small class="portal-summary-detail">${escapeHtml(next.name)}</small>` : ""}</span>
     </article>`;
+  // The calendar shows the cards on computers; Home shows them on phones.
+  document.querySelector("#portal-summary").innerHTML = summaryHtml;
+  document.querySelector("#portal-home-summary").innerHTML = summaryHtml;
 }
 
 function renderCalendar() {
@@ -1947,7 +1954,24 @@ function clearPortalData() {
   clientDialog.close();
   clientForm.reset();
   renderAll();
-  showView("calendar");
+  showView(homeView());
+}
+
+// Phones use the bottom tab bar and open on Home (the client list); computers open on the calendar.
+const phoneLayout = window.matchMedia?.("(max-width: 760px)");
+
+function isPhoneLayout() {
+  return Boolean(phoneLayout?.matches);
+}
+
+function homeView() {
+  if (!isPhoneLayout()) return "calendar";
+  return clients.length ? "clients" : "empty";
+}
+
+function navigateTo(view) {
+  showView(view === "clients" && !clients.length ? "empty" : view);
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function showSignedInPortal(user) {
@@ -1955,6 +1979,7 @@ function showSignedInPortal(user) {
   portalApp.hidden = false;
   document.querySelector("#portal-user-email").textContent = user.email || "Administrator";
   renderAll();
+  showView(homeView());
 }
 
 async function authorizePortalUser(user) {
@@ -2090,7 +2115,7 @@ passwordForm.addEventListener("submit", async (event) => {
   }
 });
 
-document.querySelector("#portal-sign-out").addEventListener("click", async () => {
+async function signOutOfPortal() {
   const { error } = await supabaseClient.auth.signOut();
   if (error) {
     const warning = document.querySelector(".portal-warning");
@@ -2106,7 +2131,9 @@ document.querySelector("#portal-sign-out").addEventListener("click", async () =>
   signInStatus.textContent = hadOfflineCopies
     ? "You have signed out. Itineraries saved on this phone were removed."
     : "You have signed out.";
-});
+}
+
+document.querySelector("#portal-sign-out").addEventListener("click", signOutOfPortal);
 
 async function restorePortalSession() {
   if (!supabaseClient) {
@@ -2167,22 +2194,55 @@ if (supabaseClient) {
 
 restorePortalSession();
 
+// Sidebar (computers). Settings sits at the bottom of the page, so navigateTo jumps to the top.
 document.querySelectorAll(".portal-nav-item").forEach((button) => {
-  button.addEventListener("click", () => {
-    if (button.dataset.view === "clients" && !clients.length) {
-      showView("empty");
-    } else {
-      showView(button.dataset.view);
-    }
-    // Settings sits at the bottom of the page, so jump to the top of the newly shown page.
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  });
+  button.addEventListener("click", () => navigateTo(button.dataset.view));
 });
 
 document.querySelector("#portal-calendar-brand").addEventListener("click", (event) => {
   event.preventDefault();
-  showView("calendar");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  navigateTo(homeView());
+});
+
+// Bottom tab bar and its More menu (phones).
+const moreTab = document.querySelector("#portal-more-tab");
+const moreMenu = document.querySelector("#portal-more-menu");
+
+// Looks the elements up each time: showView can run before this part of the script has loaded.
+function setMoreMenuOpen(open) {
+  const menu = document.querySelector("#portal-more-menu");
+  const tab = document.querySelector("#portal-more-tab");
+  menu.hidden = !open;
+  tab.setAttribute("aria-expanded", String(open));
+  tab.classList.toggle("is-open", open);
+}
+
+document.querySelectorAll("[data-tab-view]").forEach((button) => {
+  button.addEventListener("click", () => {
+    navigateTo(button.dataset.tabView);
+  });
+});
+
+moreTab.addEventListener("click", (event) => {
+  event.stopPropagation();
+  setMoreMenuOpen(moreMenu.hidden);
+  if (!moreMenu.hidden) moreMenu.querySelector(".portal-more-item")?.focus({ preventScroll: true });
+});
+
+document.querySelector("#portal-more-sign-out").addEventListener("click", () => {
+  setMoreMenuOpen(false);
+  signOutOfPortal();
+});
+
+document.addEventListener("click", (event) => {
+  if (!moreMenu.hidden && !moreMenu.contains(event.target)) setMoreMenuOpen(false);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !moreMenu.hidden) {
+    setMoreMenuOpen(false);
+    moreTab.focus();
+  }
 });
 
 document.querySelectorAll("[data-theme-option]").forEach((button) => {
@@ -3506,6 +3566,14 @@ function renderInquiries() {
   badge.textContent = String(newInquiries.length);
   badge.hidden = newInquiries.length === 0;
   badge.setAttribute("aria-label", `${newInquiries.length} new`);
+  document.querySelectorAll("[data-inquiry-badge]").forEach((tabBadge) => {
+    tabBadge.textContent = newInquiries.length > 99 ? "99+" : String(newInquiries.length);
+    tabBadge.hidden = newInquiries.length === 0;
+  });
+  document.querySelector('.portal-tab[data-tab-view="inquiries"]')?.setAttribute(
+    "aria-label",
+    newInquiries.length ? `Inquiries, ${newInquiries.length} new` : "Inquiries",
+  );
   document.querySelector('[data-inquiry-count="new"]').textContent = `(${newInquiries.length})`;
   document.querySelector('[data-inquiry-count="done"]').textContent = `(${doneInquiries.length})`;
   document.querySelectorAll("[data-inquiry-filter]").forEach((button) => {
@@ -3669,7 +3737,7 @@ async function restorePortalPlace() {
       activeDocument = "itinerary";
       renderDocument();
     }
-  } else if (["calendar", "clients", "inquiries", "settings"].includes(place.view)) {
+  } else if (["calendar", "clients", "inquiries", "portfolio", "settings"].includes(place.view)) {
     showView(place.view === "clients" && !clients.length ? "empty" : place.view);
   }
 }
