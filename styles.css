@@ -3589,6 +3589,12 @@ h2 em,
   color: var(--ink);
 }
 
+html[data-portal-theme="dark"],
+html[data-portal-theme="dark"] .portal-body {
+  color-scheme: dark;
+  background: #1d1915;
+}
+
 .portal-app[data-theme="dark"] {
   color-scheme: dark;
   --paper: #1d1915;

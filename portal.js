@@ -128,8 +128,18 @@ function applyPortalTheme(theme, persist = false) {
     button.setAttribute("aria-pressed", String(button.dataset.themeOption === selectedTheme));
   });
   if (persist) localStorage.setItem(PORTAL_THEME_KEY, selectedTheme);
+  syncPageTheme();
 }
 
+// The dark theme lives on .portal-app, but the page behind it (seen when you scroll past the top or
+// bottom on iPhone) and the phone's own top/bottom bars follow the page and theme-color, so match them.
+function syncPageTheme() {
+  const dark = !portalApp.hidden && portalApp.dataset.theme === "dark";
+  document.documentElement.dataset.portalTheme = dark ? "dark" : "light";
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#1d1915" : "#f6f1e8");
+}
+
+new MutationObserver(syncPageTheme).observe(portalApp, { attributes: true, attributeFilter: ["hidden"] });
 applyPortalTheme(localStorage.getItem(PORTAL_THEME_KEY) || "light");
 
 function showLoginMode(mode) {
