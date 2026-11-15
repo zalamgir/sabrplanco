@@ -6327,3 +6327,55 @@ body:has(.portal-app[data-theme="dark"]) .portal-pull-indicator {
     margin-top: 0.6rem;
   }
 }
+
+/* Compact page heading (Services): heading and description side by side on computers and
+   less padding everywhere, so the page's content starts on the first screen. */
+.page-heading-compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 380px);
+  align-items: end;
+  column-gap: 3rem;
+  padding-top: clamp(2.5rem, 6vh, 4.5rem);
+  padding-bottom: 2.5rem;
+}
+
+.page-heading-compact .eyebrow {
+  grid-column: 1 / -1;
+}
+
+.page-heading-compact h1 {
+  font-size: clamp(2.6rem, 4.5vw, 4rem);
+}
+
+.page-heading-compact .page-description {
+  margin: 0 0 0.4rem;
+}
+
+.services-page {
+  padding-top: 2.5rem;
+  padding-bottom: 4.5rem;
+}
+
+@media (max-width: 650px) {
+  .page-heading-compact {
+    display: block;
+    padding-top: 1.6rem;
+    padding-bottom: 1.6rem;
+  }
+
+  .page-heading-compact h1 {
+    margin-top: 0.8rem;
+    font-size: clamp(2rem, 9vw, 2.5rem);
+  }
+
+  .page-heading-compact .page-description {
+    margin-top: 0.7rem;
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+
+  .services-page {
+    padding-top: 0.6rem;
+    padding-bottom: 3rem;
+  }
+}
