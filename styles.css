@@ -6277,3 +6277,53 @@ body:has(.portal-app[data-theme="dark"]) .portal-pull-indicator {
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
   }
 }
+
+/* Inquiry page: one short intro beside (computer) or just above (phone) the form, so the
+   first fields are on screen without scrolling. */
+.inquiry-page {
+  align-items: start;
+  padding-top: clamp(2.5rem, 6vh, 4.5rem);
+  padding-bottom: 5rem;
+}
+
+.inquiry-page h1 {
+  margin: 1.25rem 0 0;
+  font: 400 clamp(2.6rem, 4.5vw, 4rem) / 1.08 var(--serif);
+  letter-spacing: -0.05em;
+}
+
+.inquiry-page h1 em {
+  color: var(--rust);
+  font-weight: 400;
+}
+
+.inquiry-page .service-area {
+  margin-top: 1.4rem;
+}
+
+.inquiry-page .inquiry-form {
+  gap: 1.1rem;
+}
+
+@media (max-width: 650px) {
+  .inquiry-page {
+    gap: 1.6rem;
+    padding-top: 1.6rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .inquiry-page h1 {
+    margin-top: 0.8rem;
+    font-size: clamp(2rem, 9vw, 2.5rem);
+  }
+
+  .inquiry-page .inquiry-heading > p:not(.eyebrow, .service-area) {
+    margin-top: 0.7rem;
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+
+  .inquiry-page .service-area {
+    margin-top: 0.6rem;
+  }
+}
